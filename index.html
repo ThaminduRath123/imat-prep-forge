@@ -474,13 +474,13 @@
          * @param {number} retriesLeft - The number of retries remaining.
          * @param {number} delay - The current delay in milliseconds.
          */
-        async function exponentialBackoffFetch(fn, retriesLeft = 5, delay = 1000) {
+        async function exponentialBackoffFetch(fn, retriesLeft = 8, delay = 2000) { // Increased retries and initial delay for stability
             try {
                 return await fn();
             } catch (error) {
                 if (retriesLeft > 0) {
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    return exponentialBackoffFetch(fn, retriesLeft - 1, delay * 2);
+                    return exponentialBackoffFetch(fn, retriesLeft - 1, delay * 1.5); // Slightly slower backoff factor
                 } else {
                     throw error;
                 }
@@ -532,6 +532,9 @@
                 });
 
                 if (!response.ok) {
+                    // Check for specific error codes like 429 (Rate Limit) or 500/503 (Server error)
+                    const errorDetails = await response.text();
+                    console.error("API response error details:", errorDetails);
                     throw new Error(`API request failed with status ${response.status}`);
                 }
                 return response.json();
@@ -550,7 +553,7 @@
             } catch (error) {
                 setLoading(false);
                 console.error("Error during question generation:", error);
-                showMessage("Failed to generate questions. Please try again.", 'error');
+                showMessage("Failed to generate questions. Please try again. (Timeout/API Error)", 'error');
                 return [];
             }
         }
@@ -604,6 +607,10 @@
         async function startAiQuiz(section, count) {
             count = parseInt(count);
             if (STATE.loading || count < 1) return;
+            if (count > 30) {
+                 showMessage("Max questions for a quick quiz is 30. Please reduce the number.", 'error');
+                 return;
+            }
 
             const query = `Generate ${count} challenging, unique multiple-choice questions for the IMAT section: ${section}.`;
 
@@ -1018,11 +1025,10 @@
             
             const questionSections = questions.map(q => q.section);
             const sectionStartIndices = {};
-            let lastSection = null;
             questions.forEach((q, index) => {
+                let lastSection = index > 0 ? questions[index - 1].section : null;
                 if (q.section !== lastSection) {
                     sectionStartIndices[index] = q.section;
-                    lastSection = q.section;
                 }
             });
 
