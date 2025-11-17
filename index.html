@@ -131,154 +131,144 @@
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
         const QUESTION_GENERATION_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
-        // --- PRE-GENERATED QUIZ DATA (EXPANDED) ---
-        // A short set of high-quality questions for quick, non-AI quizzes
+        // --- PRE-GENERATED QUIZ DATA (125 QUESTIONS TOTAL) ---
+        // 25 questions per section (5 sections) for instant, reliable practice.
         const PRE_GENERATED_QUIZ_QUESTIONS = [
-            // BIOLOGY
-            {
-                id: 'PQ1',
-                questionText: 'Which of the following cellular organelles is primarily responsible for generating the vast majority of ATP through aerobic respiration in eukaryotic cells?',
-                section: 'Biology',
-                options: {
-                    A: 'Ribosome',
-                    B: 'Endoplasmic Reticulum',
-                    C: 'Mitochondrion',
-                    D: 'Lysosome',
-                    E: 'Golgi Apparatus'
-                },
-                correctAnswer: 'C',
-                explanation: 'The **Mitochondrion** is the powerhouse of the eukaryotic cell. It is the site of cellular respiration, which produces the most ATP (energy) from glucose.'
-            },
-            {
-                id: 'PQ2',
-                questionText: 'What is the primary function of DNA ligase in molecular biology?',
-                section: 'Biology',
-                options: {
-                    A: 'To unwind the DNA double helix.',
-                    B: 'To synthesize new DNA strands from a template.',
-                    C: 'To separate DNA fragments by size.',
-                    D: 'To join Okazaki fragments on the lagging strand.',
-                    E: 'To remove introns from mRNA.'
-                },
-                correctAnswer: 'D',
-                explanation: '**DNA ligase** acts as molecular glue, specifically joining the small DNA segments (Okazaki fragments) created during replication of the lagging strand into a continuous strand.'
-            },
-            // CHEMISTRY
-            {
-                id: 'PQ3',
-                questionText: 'If 20g of NaOH (Molar mass 40 g/mol) is dissolved in enough water to make 500 mL of solution, what is the molar concentration (M) of the solution?',
-                section: 'Chemistry',
-                options: {
-                    A: '0.5 M',
-                    B: '1.0 M',
-                    C: '1.5 M',
-                    D: '2.0 M',
-                    E: '4.0 M'
-                },
-                correctAnswer: 'B',
-                explanation: '1. Calculate moles of NaOH: Moles = Mass / Molar Mass = 20g / 40 g/mol = 0.5 moles. 2. Convert volume to Liters: 500 mL = 0.5 L. 3. Calculate Molarity: Molarity = Moles / Volume (L) = 0.5 moles / 0.5 L = **1.0 M**.'
-            },
-            {
-                id: 'PQ4',
-                questionText: 'Which type of chemical bond involves the complete transfer of valence electron(s) between atoms?',
-                section: 'Chemistry',
-                options: {
-                    A: 'Covalent bond',
-                    B: 'Hydrogen bond',
-                    C: 'Metallic bond',
-                    D: 'Ionic bond',
-                    E: 'Polar covalent bond'
-                },
-                correctAnswer: 'D',
-                explanation: 'An **Ionic bond** is formed when one atom completely transfers one or more electrons to another, resulting in attractive electrostatic forces between oppositely charged ions.'
-            },
-            // LOGICAL REASONING
-            {
-                id: 'PQ5',
-                questionText: '**Argument:** All successful doctors studied diligently. Jane is a successful doctor. Therefore, Jane studied diligently. **Which one of the following best describes the logical structure of this argument?**',
-                section: 'Logical Reasoning',
-                options: {
-                    A: 'It contains a sampling error.',
-                    B: 'It is a valid syllogism (Modus Ponens).',
-                    C: 'It commits the fallacy of affirming the consequent.',
-                    D: 'The conclusion does not follow from the premises.',
-                    E: 'It is an argument from analogy.'
-                },
-                correctAnswer: 'B',
-                explanation: 'This argument follows the structure of Modus Ponens (If P, then Q. P. Therefore, Q), which is a valid form of deductive reasoning.'
-            },
-            {
-                id: 'PQ6',
-                questionText: 'Which statement, if true, most weakens the following argument? **"The city should stop funding the central library branch because online resources now provide all necessary information, making physical books obsolete."**',
-                section: 'Logical Reasoning',
-                options: {
-                    A: 'Online resources are more expensive to maintain than physical books.',
-                    B: 'The central library also provides public computer access and job training workshops.',
-                    C: 'Most students prefer using physical textbooks over digital ones.',
-                    D: 'The library building is a historical landmark.',
-                    E: 'The budget for city parks is also being cut this year.'
-                },
-                correctAnswer: 'B',
-                explanation: 'The argument assumes the library\'s *only* function is providing books. Showing the library offers crucial non-book services (computer access, job training) directly attacks and weakens the premise for defunding.'
-            },
-            // PHYSICS & MATHEMATICS
-            {
-                id: 'PQ7',
-                questionText: 'A car accelerates uniformly from rest to $20 \\text{ m/s}$ in $5$ seconds. What is the acceleration?',
-                section: 'Physics & Mathematics',
-                options: {
-                    A: '$4 \\text{ m/s}^2$',
-                    B: '$5 \\text{ m/s}^2$',
-                    C: '$100 \\text{ m/s}^2$',
-                    D: '$0.25 \\text{ m/s}^2$',
-                    E: '$20 \\text{ m/s}^2$'
-                },
-                correctAnswer: 'A',
-                explanation: 'Acceleration (a) is calculated as the change in velocity $(\\Delta v)$ divided by time $(\\Delta t)$. Since it starts from rest, $\\Delta v = 20 \\text{ m/s}$. Thus, $a = 20 \\text{ m/s} / 5 \\text{ s} = 4 \\text{ m/s}^2$.'
-            },
-            {
-                id: 'PQ8',
-                questionText: 'If $3^x = 81$, what is the value of $x$?',
-                section: 'Physics & Mathematics',
-                options: {
-                    A: '2',
-                    B: '3',
-                    C: '4',
-                    D: '27',
-                    E: '81'
-                },
-                correctAnswer: 'C',
-                explanation: 'We need to find the power to which 3 must be raised to equal 81. Since $3 \\times 3 = 9$, $9 \\times 3 = 27$, and $27 \\times 3 = 81$, we have $3^4 = 81$. Therefore, $x=4$.'
-            },
-             // GENERAL KNOWLEDGE
-            {
-                id: 'PQ9',
-                questionText: 'Which international organization is responsible for publishing the annual Human Development Index (HDI)?',
-                section: 'General Knowledge',
-                options: {
-                    A: 'World Health Organization (WHO)',
-                    B: 'United Nations Development Programme (UNDP)',
-                    C: 'International Monetary Fund (IMF)',
-                    D: 'World Bank',
-                    E: 'UNICEF'
-                },
-                correctAnswer: 'B',
-                explanation: 'The **United Nations Development Programme (UNDP)** is the agency responsible for calculating and publishing the Human Development Index (HDI).'
-            },
-            {
-                id: 'PQ10',
-                questionText: 'The concept of "separation of powers" (dividing governmental roles into legislative, executive, and judicial branches) is primarily attributed to which Enlightenment philosopher?',
-                section: 'General Knowledge',
-                options: {
-                    A: 'Jean-Jacques Rousseau',
-                    B: 'Voltaire',
-                    C: 'Immanuel Kant',
-                    D: 'Baron de Montesquieu',
-                    E: 'John Locke'
-                },
-                correctAnswer: 'D',
-                explanation: 'Baron de **Montesquieu**, specifically in his work *The Spirit of the Laws*, detailed the concept of separating government powers to prevent tyranny.'
-            }
+            // BIOLOGY (25 Questions)
+            { id: 'B1', questionText: 'Which organelle is responsible for synthesizing lipids and detoxifying drugs?', section: 'Biology', options: { A: 'Rough ER', B: 'Smooth ER', C: 'Golgi Apparatus', D: 'Mitochondrion', E: 'Lysosome' }, correctAnswer: 'B', explanation: 'The **Smooth Endoplasmic Reticulum (Smooth ER)** handles lipid synthesis, steroid production, and the detoxification of drugs and poisons, lacking the ribosomes found on the Rough ER.' },
+            { id: 'B2', questionText: 'During meiosis, the crossing over of homologous chromosomes occurs in which phase?', section: 'Biology', options: { A: 'Prophase I', B: 'Metaphase I', C: 'Anaphase II', D: 'Telophase I', E: 'Prophase II' }, correctAnswer: 'A', explanation: '**Prophase I** is the stage in meiosis where homologous chromosomes pair up and exchange genetic material (crossing over), leading to genetic variation.' },
+            { id: 'B3', questionText: 'What is the primary product of the Calvin cycle used to synthesize glucose?', section: 'Biology', options: { A: 'ATP', B: 'NADPH', C: 'Oxygen', D: 'Glyceraldehyde-3-phosphate (G3P)', E: 'RuBP' }, correctAnswer: 'D', explanation: 'The Calvin cycle produces a three-carbon sugar, **Glyceraldehyde-3-phosphate (G3P)**, two of which are needed to synthesize one molecule of glucose.' },
+            { id: 'B4', questionText: 'In humans, which chamber of the heart receives oxygenated blood from the pulmonary veins?', section: 'Biology', options: { A: 'Right Atrium', B: 'Right Ventricle', C: 'Left Atrium', D: 'Left Ventricle', E: 'Pulmonary Artery' }, correctAnswer: 'C', explanation: 'The **Left Atrium** is the chamber that receives oxygen-rich blood returning from the lungs via the pulmonary veins.' },
+            { id: 'B5', questionText: 'The process of translating mRNA into a protein occurs on which cellular structure?', section: 'Biology', options: { A: 'Nucleus', B: 'Mitochondrion', C: 'Ribosome', D: 'Cell membrane', E: 'Vacuole' }, correctAnswer: 'C', explanation: 'The **Ribosome** is the site where messenger RNA (mRNA) sequences are read and translated into chains of amino acids (polypeptides/proteins).' },
+            { id: 'B6', questionText: 'The outermost layer of the human skin is called the:', section: 'Biology', options: { A: 'Dermis', B: 'Hypodermis', C: 'Epidermis', D: 'Melanin layer', E: 'Subcutaneous fat' }, correctAnswer: 'C', explanation: 'The **Epidermis** is the outermost, protective layer of the skin, composed primarily of stratified squamous epithelium.' },
+            { id: 'B7', questionText: 'Which structure connects muscle to bone?', section: 'Biology', options: { A: 'Ligament', B: 'Cartilage', C: 'Tendon', D: 'Fascia', E: 'Joint capsule' }, correctAnswer: 'C', explanation: 'A **Tendon** is a strong, flexible band of fibrous connective tissue that attaches muscle to bone.' },
+            { id: 'B8', questionText: 'What is the function of the glomerulus in the kidney?', section: 'Biology', options: { A: 'Reabsorption of water', B: 'Filtration of blood', C: 'Secretion of hormones', D: 'Regulation of blood sugar', E: 'Production of urea' }, correctAnswer: 'B', explanation: 'The **glomerulus** is a network of capillaries where blood pressure forces water and solutes out of the blood and into the Bowman\'s capsule, initiating the **filtration of blood**.' },
+            { id: 'B9', questionText: 'Which component is responsible for maintaining the turgor pressure in plant cells?', section: 'Biology', options: { A: 'Mitochondrion', B: 'Cell Wall', C: 'Chloroplast', D: 'Large central vacuole', E: 'Plasmodesmata' }, correctAnswer: 'D', explanation: 'The **Large central vacuole** stores water and contributes significantly to the internal pressure (turgor) that keeps the plant cell rigid.' },
+            { id: 'B10', questionText: 'Which type of cell junction prevents the leakage of fluid across a layer of epithelial cells?', section: 'Biology', options: { A: 'Gap junctions', B: 'Desmosomes', C: 'Tight junctions', D: 'Plasmodesmata', E: 'Anchoring junctions' }, correctAnswer: 'C', explanation: '**Tight junctions** form seals around the cells, preventing materials from passing between them, ensuring that substances must pass *through* the cells.' },
+            { id: 'B11', questionText: 'Mendel\'s Law of Segregation states that:', section: 'Biology', options: { A: 'Genes located on the same chromosome are inherited together.', B: 'Alleles for a gene separate during gamete formation.', C: 'One allele is always dominant over the other.', D: 'Chromosomes line up randomly at the metaphase plate.', E: 'Traits are inherited independently of one another.' }, correctAnswer: 'B', explanation: 'The **Law of Segregation** states that the two alleles for a heritable character separate (segregate) during gamete formation and end up in different gametes.' },
+            { id: 'B12', questionText: 'The main function of haemoglobin in the blood is to transport:', section: 'Biology', options: { A: 'Glucose', B: 'Carbon Dioxide', C: 'Oxygen', D: 'Water', E: 'Fatty acids' }, correctAnswer: 'C', explanation: 'Haemoglobin, a protein in red blood cells, is primarily responsible for binding and transporting **Oxygen** from the lungs to the rest of the body.' },
+            { id: 'B13', questionText: 'The process of cell eating is known as:', section: 'Biology', options: { A: 'Exocytosis', B: 'Pinocytosis', C: 'Osmosis', D: 'Phagocytosis', E: 'Active transport' }, correctAnswer: 'D', explanation: '**Phagocytosis** is a type of endocytosis in which a cell engulfs large particles or whole cells (cell eating).' },
+            { id: 'B14', questionText: 'What is the term for a permanent change in the DNA sequence of an organism?', section: 'Biology', options: { A: 'Transcription', B: 'Translation', C: 'Replication', D: 'Mutation', E: 'Differentiation' }, correctAnswer: 'D', explanation: 'A **Mutation** is a permanent, inheritable change in the nucleotide sequence of DNA.' },
+            { id: 'B15', questionText: 'Which type of RNA carries amino acids to the ribosome?', section: 'Biology', options: { A: 'mRNA', B: 'rRNA', C: 'tRNA', D: 'snRNA', E: 'miRNA' }, correctAnswer: 'C', explanation: '**Transfer RNA (tRNA)** transports specific amino acids to the ribosome during protein synthesis (translation).' },
+            { id: 'B16', questionText: 'Where does the digestion of carbohydrates primarily begin in the human body?', section: 'Biology', options: { A: 'Stomach', B: 'Small Intestine', C: 'Large Intestine', D: 'Mouth', E: 'Esophagus' }, correctAnswer: 'D', explanation: 'Carbohydrate digestion begins in the **Mouth** with the action of salivary amylase.' },
+            { id: 'B17', questionText: 'The hormone insulin is produced by which organ?', section: 'Biology', options: { A: 'Liver', B: 'Kidney', C: 'Pancreas', D: 'Thyroid gland', E: 'Adrenal gland' }, correctAnswer: 'C', explanation: '**Insulin** is produced by the Beta cells in the Islets of Langerhans within the **Pancreas** and regulates blood glucose levels.' },
+            { id: 'B18', questionText: 'What is the structural difference between saturated and unsaturated fatty acids?', section: 'Biology', options: { A: 'Saturated fats have sulfur, unsaturated do not.', B: 'Unsaturated fats have one or more double bonds.', C: 'Saturated fats are liquid at room temperature.', D: 'Unsaturated fats contain nitrogen.', E: 'Saturated fats are shorter chains.' }, correctAnswer: 'B', explanation: 'Unsaturated fatty acids contain one or more carbon-carbon **double bonds**, causing kinks, whereas saturated fatty acids have only single bonds.' },
+            { id: 'B19', questionText: 'Which domain of life includes humans, plants, fungi, and protists?', section: 'Biology', options: { A: 'Archaea', B: 'Bacteria', C: 'Eukaryota', D: 'Monera', E: 'Prokaryota' }, correctAnswer: 'C', explanation: 'The domain **Eukaryota** consists of all organisms whose cells have a nucleus and other membrane-bound organelles.' },
+            { id: 'B20', questionText: 'The primary role of the thick cuticle found on desert plants is to:', section: 'Biology', options: { A: 'Increase light absorption', B: 'Promote transpiration', C: 'Prevent water loss', D: 'Store large amounts of water', E: 'Aid in photosynthesis' }, correctAnswer: 'C', explanation: 'A thick **cuticle** (waxy layer) acts as a barrier to reduce evaporation and **prevent water loss** (desiccation) in arid environments.' },
+            { id: 'B21', questionText: 'Which enzyme is responsible for the primary synthesis of a new complementary DNA strand during replication?', section: 'Biology', options: { A: 'DNA helicase', B: 'DNA ligase', C: 'Primase', D: 'DNA Polymerase III', E: 'Telomerase' }, correctAnswer: 'D', explanation: '**DNA Polymerase III** is the enzyme that adds DNA nucleotides to the 3\' end of a growing daughter strand, performing the bulk of the DNA synthesis.' },
+            { id: 'B22', questionText: 'During cellular respiration, which process occurs in the cytoplasm, outside the mitochondrion?', section: 'Biology', options: { A: 'Krebs Cycle', B: 'Oxidative Phosphorylation', C: 'Glycolysis', D: 'Electron Transport Chain', E: 'Chemiosmosis' }, correctAnswer: 'C', explanation: '**Glycolysis** is the initial step in breaking down glucose, and it occurs entirely in the **cytoplasm** (cytosol).' },
+            { id: 'B23', questionText: 'The structure labeled as the "master gland" in the endocrine system is the:', section: 'Biology', options: { A: 'Thyroid', B: 'Adrenal gland', C: 'Hypothalamus', D: 'Pituitary gland', E: 'Pineal gland' }, correctAnswer: 'D', explanation: 'The **Pituitary gland** is often called the "master gland" because it produces hormones that control many other endocrine glands, though it is itself controlled by the Hypothalamus.' },
+            { id: 'B24', questionText: 'Which component of a virus determines the host cells it can infect?', section: 'Biology', options: { A: 'DNA/RNA core', B: 'Capsid proteins', C: 'Envelope glycoproteins', D: 'Reverse transcriptase', E: 'Ribosomes' }, correctAnswer: 'C', explanation: 'The **envelope glycoproteins** (or spikes/surface proteins) on the outside of the virus bind to specific receptor molecules on the host cell, determining its host range.' },
+            { id: 'B25', questionText: 'In the ABO blood group system, the allele for type O blood is:', section: 'Biology', options: { A: 'Codominant', B: 'Dominant', C: 'Recessive', D: 'Sex-linked', E: 'Incompletely dominant' }, correctAnswer: 'C', explanation: 'The **O allele (i)** is **recessive**; a person must inherit two copies (ii) to express type O blood, as the A and B alleles are dominant to it.' },
+
+            // CHEMISTRY (25 Questions)
+            { id: 'C1', questionText: 'Which element has the lowest first ionization energy?', section: 'Chemistry', options: { A: 'Chlorine (Cl)', B: 'Sodium (Na)', C: 'Neon (Ne)', D: 'Magnesium (Mg)', E: 'Sulfur (S)' }, correctAnswer: 'B', explanation: 'First ionization energy generally decreases down a group and increases across a period. **Sodium (Na)**, an alkali metal in Group 1, readily loses its single valence electron and thus has the lowest ionization energy among the choices.' },
+            { id: 'C2', questionText: 'What is the hybridization of the carbon atom in methane $(\\text{CH}_4)$?', section: 'Chemistry', options: { A: '$sp$', B: '$sp^2$', C: '$sp^3$', D: '$d^2sp^3$', E: '$dsp^2$' }, correctAnswer: 'C', explanation: 'In methane, the central carbon atom is bonded to four hydrogen atoms, resulting in a tetrahedral geometry and **$sp^3$** hybridization.' },
+            { id: 'C3', questionText: 'Which of the following describes a strong acid in aqueous solution?', section: 'Chemistry', options: { A: 'It has a high pH.', B: 'It partially dissociates into ions.', C: 'It fully dissociates into ions.', D: 'It acts as a proton acceptor.', E: 'It is a good buffer solution.' }, correctAnswer: 'C', explanation: 'A **strong acid** is defined as one that **fully dissociates** (100% ionization) in water, yielding the maximum possible concentration of $\\text{H}^+$ ions.' },
+            { id: 'C4', questionText: 'How many molecules are present in $22.4 \\text{ L}$ of carbon dioxide ($\\text{CO}_2$) gas at standard temperature and pressure (STP)?', section: 'Chemistry', options: { A: '$1$ mole', B: '$12.04 \\times 10^{23}$ molecules', C: '$6.022 \\times 10^{23}$ molecules', D: '$44 \\text{ g}$', E: '$1$ atom' }, correctAnswer: 'C', explanation: 'At STP, $22.4 \\text{ L}$ of any ideal gas (including $\\text{CO}_2$) corresponds to $1 \\text{ mole}$. One mole contains **$6.022 \\times 10^{23}$ molecules** (Avogadro\'s number).' },
+            { id: 'C5', questionText: 'The $\\text{pH}$ of a solution with a hydrogen ion concentration $[\text{H}^+]$ of $1 \\times 10^{-4} \\text{ M}$ is:', section: 'Chemistry', options: { A: '10', B: '4', C: '7', D: '1', E: '-4' }, correctAnswer: 'B', explanation: 'The $\\text{pH}$ is calculated as $-\\log_{10}[\text{H}^+]$. For $[\text{H}^+] = 1 \\times 10^{-4} \\text{ M}$, $\\text{pH} = -\\log_{10}(10^{-4}) = **4**$.' },
+            { id: 'C6', questionText: 'Which type of radiation released during radioactive decay has no mass and no electrical charge?', section: 'Chemistry', options: { A: 'Alpha particles', B: 'Beta particles', C: 'Protons', D: 'Gamma rays', E: 'Neutrons' }, correctAnswer: 'D', explanation: '**Gamma rays** are high-energy photons (electromagnetic radiation), which means they have neither mass nor charge.' },
+            { id: 'C7', questionText: 'In a redox reaction, the substance that is reduced acts as the:', section: 'Chemistry', options: { A: 'Reducing agent', B: 'Oxidizing agent', C: 'Catalyst', D: 'Solvent', E: 'Indicator' }, correctAnswer: 'B', explanation: 'The substance that is **reduced** (gains electrons) causes the other substance to be oxidized, hence it is called the **oxidizing agent**.' },
+            { id: 'C8', questionText: 'The intermolecular forces present in a sample of pure water ($\\text{H}_2\text{O}$) include:', section: 'Chemistry', options: { A: 'London dispersion forces only', B: 'Dipole-dipole forces only', C: 'Ionic bonds', D: 'Hydrogen bonds and London dispersion forces', E: 'Metallic bonds' }, correctAnswer: 'D', explanation: 'Water is a polar molecule, exhibiting dipole-dipole interactions, but more importantly, strong **Hydrogen bonds**. It also exhibits weak **London dispersion forces** (van der Waals forces).' },
+            { id: 'C9', questionText: 'What is the systematic name for the compound $\\text{FeCl}_3$?', section: 'Chemistry', options: { A: 'Iron chloride', B: 'Iron(II) chloride', C: 'Iron(III) chloride', D: 'Iron trichloride', E: 'Ferric chloride' }, correctAnswer: 'C', explanation: 'Iron ($\\text{Fe}$) has a variable charge, and since there are three chloride ions ($\\text{Cl}^-$, charge $-1$), the iron ion must have a $+3$ charge to balance it. Thus, the name is **Iron(III) chloride**.' },
+            { id: 'C10', questionText: 'The conversion of a substance directly from the solid state to the gaseous state is known as:', section: 'Chemistry', options: { A: 'Evaporation', B: 'Condensation', C: 'Sublimation', D: 'Deposition', E: 'Melting' }, correctAnswer: 'C', explanation: '**Sublimation** is the phase transition from the solid state to the gas state without passing through the liquid state (e.g., dry ice to $\\text{CO}_2$ gas).' },
+            { id: 'C11', questionText: 'Which statement accurately describes the reactivity of elements within Group 1 (Alkali Metals)?', section: 'Chemistry', options: { A: 'Reactivity increases from top to bottom.', B: 'Reactivity decreases from top to bottom.', C: 'Reactivity is constant across the group.', D: 'Ionization energy increases from top to bottom.', E: 'Electronegativity increases from top to bottom.' }, correctAnswer: 'A', explanation: 'Alkali metals lose their valence electron easily. As atomic size increases down the group, the valence electron is farther from the nucleus, making it easier to remove and thus increasing **Reactivity**.' },
+            { id: 'C12', questionText: 'If a chemical reaction has a negative change in Gibbs Free Energy ($\\Delta G < 0$), the reaction is classified as:', section: 'Chemistry', options: { A: 'Exothermic', B: 'Endothermic', C: 'Non-spontaneous', D: 'Spontaneous', E: 'At equilibrium' }, correctAnswer: 'D', explanation: 'A reaction with a negative $\\Delta G$ releases free energy and is **spontaneous** (will proceed without continuous external energy input) under the specified conditions.' },
+            { id: 'C13', questionText: 'In organic chemistry, the functional group $\\text{R-OH}$ represents a(n):', section: 'Chemistry', options: { A: 'Aldehyde', B: 'Ketone', C: 'Carboxylic acid', D: 'Alcohol', E: 'Ether' }, correctAnswer: 'D', explanation: 'The hydroxyl ($\\text{-OH}$) functional group attached to an alkyl group ($\\text{R}$) characterizes an **Alcohol**.' },
+            { id: 'C14', questionText: 'What is the total number of protons in an atom of Carbon-14 ($^{14}\\text{C}$)?', section: 'Chemistry', options: { A: '6', B: '8', C: '14', D: '7', E: '12' }, correctAnswer: 'A', explanation: 'The atomic number ($\text{Z}$) of Carbon is always **6**, meaning any carbon isotope has 6 protons. The number 14 is the mass number (protons + neutrons).' },
+            { id: 'C15', questionText: 'A substance that increases the rate of a chemical reaction without being consumed itself is called a(n):', section: 'Chemistry', options: { A: 'Inhibitor', B: 'Reactant', C: 'Product', D: 'Catalyst', E: 'Buffer' }, correctAnswer: 'D', explanation: 'A **Catalyst** provides an alternative reaction pathway with a lower activation energy, thereby increasing the rate without being permanently changed.' },
+            { id: 'C16', questionText: 'Which compound is considered a buffer when mixed with its conjugate acid/base pair?', section: 'Chemistry', options: { A: 'Strong acid ($\\text{HCl}$)', B: 'Strong base ($\\text{NaOH}$)', C: 'Weak acid ($\\text{CH}_3\\text{COOH}$)', D: 'Salt ($\text{NaCl}$)', E: 'Water ($\text{H}_2\text{O}$)' }, correctAnswer: 'C', explanation: 'A buffer system requires a mixture of a **weak acid (like $\\text{CH}_3\\text{COOH}$)** and its conjugate base (or a weak base and its conjugate acid).' },
+            { id: 'C17', questionText: 'The maximum number of electrons that can occupy the $p$ subshell is:', section: 'Chemistry', options: { A: '2', B: '6', C: '10', D: '14', E: '8' }, correctAnswer: 'B', explanation: 'The $p$ subshell contains three $p$ orbitals, and each orbital can hold 2 electrons. Therefore, the maximum number of electrons is $3 \\times 2 = **6**$.' },
+            { id: 'C18', questionText: 'Which state of matter is characterized by having a definite volume but an indefinite shape?', section: 'Chemistry', options: { A: 'Solid', B: 'Liquid', C: 'Gas', D: 'Plasma', E: 'Bose-Einstein Condensate' }, correctAnswer: 'B', explanation: 'A **Liquid** maintains a fixed volume but takes the shape of its container.' },
+            { id: 'C19', questionText: 'If a reaction is exothermic, the sign of the enthalpy change ($\\Delta H$) is:', section: 'Chemistry', options: { A: 'Positive', B: 'Negative', C: 'Zero', D: 'Variable', E: 'Undefined' }, correctAnswer: 'B', explanation: 'An **exothermic** reaction releases heat energy to the surroundings, meaning the system\'s energy decreases, so $\\Delta H$ is **Negative**.' },
+            { id: 'C20', questionText: 'What is the percentage composition of oxygen in $\\text{H}_2\text{O}$? (Atomic masses: $\\text{H}=1.0$, $\\text{O}=16.0$)', section: 'Chemistry', options: { A: '11.1%', B: '88.9%', C: '50.0%', D: '33.3%', E: '94.1%' }, correctAnswer: 'B', explanation: 'Molar Mass of $\\text{H}_2\text{O} = (2 \\times 1.0) + 16.0 = 18.0$. Mass of $\text{O} = 16.0$. Percentage of $\text{O} = (16.0 / 18.0) \\times 100\\% \\approx **88.9\\%**$.' },
+            { id: 'C21', questionText: 'Which compound is the main component of natural gas?', section: 'Chemistry', options: { A: 'Propane ($\text{C}_3\\text{H}_8$)', B: 'Methane ($\text{CH}_4$)', C: 'Butane ($\text{C}_4\\text{H}_{10}$)', D: 'Ethane ($\text{C}_2\\text{H}_6$)', E: 'Octane ($\text{C}_8\\text{H}_{18}$)' }, correctAnswer: 'B', explanation: '**Methane ($\text{CH}_4$)** is the simplest alkane and the primary component (typically over $90\\%$) of natural gas.' },
+            { id: 'C22', questionText: 'According to Boyle\'s Law, for a fixed amount of gas at constant temperature, pressure is inversely proportional to:', section: 'Chemistry', options: { A: 'Temperature', B: 'Volume', C: 'Moles', D: 'Density', E: 'Velocity' }, correctAnswer: 'B', explanation: '**Boyle\'s Law** states that for a fixed mass of gas at constant temperature, the pressure is **inversely proportional to the volume** ($P \\propto 1/V$).' },
+            { id: 'C23', questionText: 'Which type of bond is formed by the sharing of electrons between atoms?', section: 'Chemistry', options: { A: 'Ionic', B: 'Metallic', C: 'Covalent', D: 'Hydrogen', E: 'Van der Waals' }, correctAnswer: 'C', explanation: 'A **Covalent bond** is a chemical bond formed as a result of the **sharing of electrons** between atoms.' },
+            { id: 'C24', questionText: 'The most electronegative element on the periodic table is:', section: 'Chemistry', options: { A: 'Oxygen', B: 'Chlorine', C: 'Nitrogen', D: 'Fluorine', E: 'Neon' }, correctAnswer: 'D', explanation: 'Electronegativity generally increases across a period and decreases down a group. **Fluorine (F)**, being in the top right (excluding noble gases), is the most electronegative element.' },
+            { id: 'C25', questionText: 'In the formula $\\text{Ca}(\\text{OH})_2$, the roman numeral for the charge on Calcium is:', section: 'Chemistry', options: { A: 'I', B: 'II', C: 'III', D: 'IV', E: 'V' }, correctAnswer: 'B', explanation: 'The Hydroxide ion ($\\text{OH}^-$) has a charge of $-1$. Since there are two $\\text{OH}^-$ ions, the total negative charge is $-2$. Therefore, the Calcium ion ($\\text{Ca}$) must have a charge of **$+2$**, written as **(II)**.' },
+
+
+            // LOGICAL REASONING (25 Questions)
+            { id: 'LR1', questionText: '**Statement:** All planets orbit stars. **Statement:** Jupiter orbits the Sun. **Conclusion:** The Sun is a star. **Which one of the following best describes the flaw in the argument?**', section: 'Logical Reasoning', options: { A: 'Appeal to emotion', B: 'Circular reasoning', C: 'Affirming the consequent', D: 'Denying the antecedent', E: 'Slippery slope' }, correctAnswer: 'C', explanation: 'The argument structure is: If P (object is a planet), then Q (object orbits a star). Q (Jupiter orbits the Sun). Therefore P (the Sun is a star). This is the fallacy of **Affirming the Consequent**; the conclusion must follow from the premises, not just be consistent with them.' },
+            { id: 'LR2', questionText: '**Argument:** The only way to improve public health is to ban all processed foods. **Which of the following, if true, would most weaken the argument?**', section: 'Logical Reasoning', options: { A: 'A study shows processed foods contain many essential vitamins.', B: 'Exercise is also necessary for public health improvements.', C: 'Banning processed foods would cause economic hardship.', D: 'Most people prefer fresh foods over processed foods.', E: 'The government has tried banning processed foods before.' }, correctAnswer: 'B', explanation: 'The argument relies on the premise that banning processed foods is the *only* way. Showing that another factor, like **exercise**, is necessary for the claimed goal directly undermines the argument\'s exclusivity (its assumption that only one solution exists).' },
+            { id: 'LR3', questionText: '**Premise 1:** If the library is open, then the lights are on. **Premise 2:** The lights are not on. **Conclusion:** Therefore, the library is not open. **This is an example of which type of valid deduction?**', section: 'Logical Reasoning', options: { A: 'Affirming the Consequent', B: 'Modus Ponens', C: 'Modus Tollens', D: 'Syllogism', E: 'Hypothetical Syllogism' }, correctAnswer: 'C', explanation: 'This structure is: If P, then Q. Not Q. Therefore, Not P. This is the logically valid form known as **Modus Tollens**.' },
+            { id: 'LR4', questionText: 'Select the statement that must be true based on the following: **All birds have feathers. No bats have feathers.**', section: 'Logical Reasoning', options: { A: 'All creatures with feathers are birds.', B: 'No birds are bats.', C: 'Some bats have wings.', D: 'All bats are mammals.', E: 'No creature that can fly is a bat.' }, correctAnswer: 'B', explanation: 'If the set of all birds is entirely within the set of feather-having things, and no bat is in that set, it logically follows that **No birds are bats**.' },
+            { id: 'LR5', questionText: '**Assumption:** Jane drives a red car to work every day. **Which fact is required for this statement to be logically sound?**', section: 'Logical Reasoning', options: { A: 'Jane enjoys driving.', B: 'Jane has a license.', C: 'Jane works every day.', D: 'Jane lives far from work.', E: 'Jane owns the red car.' }, correctAnswer: 'C', explanation: 'The assumption is that she drives to work *every day*. If she only works three days a week, the statement "Jane drives a red car to work every day" is false. Therefore, the statement requires that **Jane works every day**.' },
+            { id: 'LR6', questionText: 'The number sequence is 2, 4, 8, 16, 32. What is the next number?', section: 'Logical Reasoning', options: { A: '48', B: '54', C: '64', D: '72', E: '78' }, correctAnswer: 'C', explanation: 'The pattern is multiplying the previous number by 2. $32 \\times 2 = **64**$.' },
+            { id: 'LR7', questionText: 'Find the odd one out: Cat, Dog, Lion, Eagle, Tiger.', section: 'Logical Reasoning', options: { A: 'Cat', B: 'Dog', C: 'Lion', D: 'Eagle', E: 'Tiger' }, correctAnswer: 'D', explanation: 'Cat, Dog, Lion, and Tiger are all mammals. The **Eagle** is a bird.' },
+            { id: 'LR8', questionText: 'If "CAR" is coded as 3118 and "BIKE" is coded as 29115, how is "READ" coded?', section: 'Logical Reasoning', options: { A: '18514', B: '15418', C: '185144', D: '18514', E: '1851441' }, correctAnswer: 'A', explanation: 'Each letter is replaced by its position in the alphabet (A=1, B=2, C=3, etc.). R=18, E=5, A=1, D=4. Thus, "READ" is **18514**.' },
+            { id: 'LR9', questionText: 'A hiker walks 10km North, then 5km East, then 10km South. How far is the hiker from the starting point?', section: 'Logical Reasoning', options: { A: '10km', B: '5km', C: '25km', D: '0km', E: '15km' }, correctAnswer: 'B', explanation: 'The 10km North and 10km South movements cancel out. The hiker is left only with the 5km East movement. The distance from the start is **5km**.' },
+            { id: 'LR10', questionText: 'Which argument uses an appeal to questionable authority?', section: 'Logical Reasoning', options: { A: 'We must cut taxes because our economist says it is the only way.', B: 'The law must be changed because most people dislike it.', C: 'The climate is changing because a famous pop star said so in an interview.', D: 'If you allow X to happen, then Y, Z, and A will inevitably follow.', E: 'My opponent is wrong because he is a known liar.' }, correctAnswer: 'C', explanation: 'A pop star is not an expert authority on climate science, making this an **appeal to a questionable authority**.' },
+            { id: 'LR11', questionText: 'If it is raining, the street is wet. The street is wet. Therefore, it is raining. This is:', section: 'Logical Reasoning', options: { A: 'Valid deduction', B: 'Invalid deduction (Affirming the Consequent)', C: 'Invalid deduction (Modus Tollens)', D: 'Circular reasoning', E: 'Sound deduction' }, correctAnswer: 'B', explanation: 'The street could be wet for other reasons (sprinkler, spilled water). This is the fallacy of **Affirming the Consequent**.' },
+            { id: 'LR12', questionText: 'Which number completes the series: 3, 9, 27, 81, ?', section: 'Logical Reasoning', options: { A: '108', B: '162', C: '243', D: '360', E: '729' }, correctAnswer: 'C', explanation: 'The pattern is multiplying the previous number by 3 ($3^1, 3^2, 3^3, 3^4$). The next is $3^5 = 81 \\times 3 = **243**$.' },
+            { id: 'LR13', questionText: 'If the day after tomorrow is Sunday, what was the day before yesterday?', section: 'Logical Reasoning', options: { A: 'Wednesday', B: 'Thursday', C: 'Friday', D: 'Monday', E: 'Saturday' }, correctAnswer: 'B', explanation: 'If the day after tomorrow is Sunday, today is Friday. Yesterday was Thursday. The day before yesterday was **Thursday**.' },
+            { id: 'LR14', questionText: 'Which of the following strengthens the argument: "Eating apples prevents tooth decay."', section: 'Logical Reasoning', options: { A: 'Apples are rich in fiber.', B: 'A study shows that people who eat apples have lower instances of tooth decay.', C: 'Apples are expensive compared to other fruits.', D: 'Tooth decay is a common health issue.', E: 'Pears are also known to prevent tooth decay.' }, correctAnswer: 'B', explanation: 'A study providing correlational evidence that the proposed cause (apples) is linked to the proposed effect (lower tooth decay) directly **strengthens** the argument.' },
+            { id: 'LR15', questionText: 'Find the missing letter in the sequence: A, C, E, G, ?', section: 'Logical Reasoning', options: { A: 'H', B: 'I', C: 'J', D: 'K', E: 'L' }, correctAnswer: 'B', explanation: 'The sequence skips one letter each time (A, B skip, C, D skip, E, F skip, G, **H skip, I**).' },
+            { id: 'LR16', questionText: 'Which logical error is made in the following: "I met a rude doctor, therefore all doctors are rude."', section: 'Logical Reasoning', options: { A: 'Ad hominem', B: 'Appeal to popularity', C: 'Hasty generalization', D: 'False dichotomy', E: 'Straw man' }, correctAnswer: 'C', explanation: 'Drawing a conclusion about an entire group based on a single, insufficient sample is a **Hasty Generalization**.' },
+            { id: 'LR17', questionText: 'Select the conclusion that must be true: **All artists are creative. John is not creative.**', section: 'Logical Reasoning', options: { A: 'John is an artist.', B: 'Some creative people are not artists.', C: 'John is not an artist.', D: 'No creative person is John.', E: 'All non-artists are not creative.' }, correctAnswer: 'C', explanation: 'If the set of all artists is contained within the set of creative people, and John is outside the creative set, then John must be outside the artist set. **John is not an artist** (Modus Tollens).' },
+            { id: 'LR18', questionText: 'If $\\text{P} = 15$ and $\\text{Q} = 10$, and $\\text{R}$ is the average of $\\text{P}$ and $\\text{Q}$, what is the value of $\\text{R}$?', section: 'Logical Reasoning', options: { A: '5', B: '12.5', C: '25', D: '10', E: '15' }, correctAnswer: 'B', explanation: 'Average $\\text{R} = (\\text{P} + \\text{Q}) / 2 = (15 + 10) / 2 = 25 / 2 = **12.5**$.' },
+            { id: 'LR19', questionText: 'Which of the following is a quantitative statement?', section: 'Logical Reasoning', options: { A: 'The food tastes better.', B: 'The car is fast.', C: 'The box weighs 15 kg.', D: 'The music is too loud.', E: 'The painting is beautiful.' }, correctAnswer: 'C', explanation: 'A quantitative statement uses a specific, measurable number (15 kg), which makes **The box weighs 15 kg** the correct answer.' },
+            { id: 'LR20', questionText: 'Find the next group of letters: $\\text{ZYA}, \\text{XWC}, \\text{VUE}, \\text{TSG}, ?$', section: 'Logical Reasoning', options: { A: 'QRI', B: 'RQI', C: 'QPO', D: 'PRK', E: 'RPO' }, correctAnswer: 'B', explanation: 'The first letter decreases by 2 ($\text{Z}, \text{X}, \text{V}, \text{T} \\rightarrow \mathbf{R}$). The second letter decreases by 2 ($\text{Y}, \text{W}, \text{U}, \text{S} \\rightarrow \mathbf{Q}$). The third letter increases by 2 ($\text{A}, \text{C}, \text{E}, \text{G} \\rightarrow \mathbf{I}$). Result: **RQI**.' },
+            { id: 'LR21', questionText: 'If a clock shows 3:30, what is the angle between the minute hand and the hour hand?', section: 'Logical Reasoning', options: { A: '75 degrees', B: '90 degrees', C: '60 degrees', D: '105 degrees', E: '120 degrees' }, correctAnswer: 'A', explanation: 'Hour hand position: $30 \\times 3 + (30/2) = 90 + 15 = 105^\circ$. Minute hand position: $30 \\times 6 = 180^\circ$. Angle $= 180^\circ - 105^\circ = **75^\circ**$.' },
+            { id: 'LR22', questionText: 'Which phrase is the main conclusion: "The government must raise the minimum wage. Low wages lead to poverty. Reducing poverty is essential for a stable economy."', section: 'Logical Reasoning', options: { A: 'Reducing poverty is essential for a stable economy.', B: 'Low wages lead to poverty.', C: 'The economy is not stable.', D: 'The government must raise the minimum wage.', E: 'Low wages should be outlawed.' }, correctAnswer: 'D', explanation: 'The core purpose of the argument is to convince the reader to take an action: **The government must raise the minimum wage**.' },
+            { id: 'LR23', questionText: 'If the water level in the sea rises, the number of coastal birds decreases. The number of coastal birds decreased. Therefore, the water level in the sea rose. This is a fallacy of:', section: 'Logical Reasoning', options: { A: 'Affirming the Consequent', B: 'Denying the Antecedent', C: 'Ad Hominem', D: 'Hasty Generalization', E: 'Modus Ponens' }, correctAnswer: 'A', explanation: 'The decrease in birds could be due to pollution or overfishing, not necessarily rising sea levels. This is the fallacy of **Affirming the Consequent**.' },
+            { id: 'LR24', questionText: 'Find the value of $x$ in the sequence: $1, 4, 9, 16, x, 36$.', section: 'Logical Reasoning', options: { A: '20', B: '25', C: '28', D: '30', E: '32' }, correctAnswer: 'B', explanation: 'The sequence consists of perfect squares: $1^2, 2^2, 3^2, 4^2, 5^2, 6^2$. The missing value is $5^2 = **25**$.' },
+            { id: 'LR25', questionText: 'What is the number of faces on a rectangular prism (cuboid)?', section: 'Logical Reasoning', options: { A: '4', B: '6', C: '8', D: '12', E: '10' }, correctAnswer: 'B', explanation: 'A rectangular prism (like a box) has a front, back, top, bottom, left side, and right side, totaling **6 faces**.' },
+
+            // PHYSICS & MATHEMATICS (25 Questions)
+            { id: 'PM1', questionText: 'The unit of electrical resistance in the SI system is the:', section: 'Physics & Mathematics', options: { A: 'Ampere', B: 'Volt', C: 'Ohm', D: 'Watt', E: 'Joule' }, correctAnswer: 'C', explanation: 'The **Ohm** ($\\Omega$) is the SI derived unit of electrical resistance.' },
+            { id: 'PM2', questionText: 'A ball is dropped from a height $h$. Ignoring air resistance, what is its speed just before hitting the ground? (Use $g$ for acceleration due to gravity).', section: 'Physics & Mathematics', options: { A: '$v = gh$', B: '$v = \\sqrt{2gh}$', C: '$v = 2gh$', D: '$v = g/h$', E: '$v = g^2h$' }, correctAnswer: 'B', explanation: 'Using the conservation of energy, Potential Energy ($\\text{mgh}$) converts to Kinetic Energy ($1/2 \\text{mv}^2$). Setting them equal and solving for $v$ yields $v = \\sqrt{2gh}$.' },
+            { id: 'PM3', questionText: 'If $2x + 5 = 15$, what is the value of $x$?', section: 'Physics & Mathematics', options: { A: '5', B: '10', C: '20', D: '2', E: '7.5' }, correctAnswer: 'A', explanation: 'Subtract 5 from both sides: $2x = 10$. Divide by 2: $x = **5**$.' },
+            { id: 'PM4', questionText: 'The total momentum of an isolated system remains constant. This is a statement of the:', section: 'Physics & Mathematics', options: { A: 'First Law of Thermodynamics', B: 'Ohm\'s Law', C: 'Law of Conservation of Momentum', D: 'Newton\'s Second Law', E: 'Archimedes\' Principle' }, correctAnswer: 'C', explanation: 'The **Law of Conservation of Momentum** states that the total momentum of a system is conserved if no external forces act on it.' },
+            { id: 'PM5', questionText: 'What is the value of $\\sin(30^\circ)$?', section: 'Physics & Mathematics', options: { A: '$\\sqrt{3}/2$', B: '1', C: '$1/2$', D: '$\\sqrt{2}/2$', E: '0' }, correctAnswer: 'C', explanation: 'The sine of $30^\circ$ is a standard trigonometric value equal to **$1/2$**.' },
+            { id: 'PM6', questionText: 'A force of $10 \\text{ N}$ is applied over a distance of $5 \\text{ m}$ in the direction of motion. What is the work done?', section: 'Physics & Mathematics', options: { A: '$2 \\text{ J}$', B: '$50 \\text{ J}$', C: '$15 \\text{ J}$', D: '$0.5 \\text{ J}$', E: '$100 \\text{ J}$' }, correctAnswer: 'B', explanation: 'Work Done ($\text{W}$) = Force ($\text{F}$) $\\times$ Distance ($\text{d}$). $\text{W} = 10 \\text{ N} \\times 5 \\text{ m} = **50 \\text{ J}$** (Joules).' },
+            { id: 'PM7', questionText: 'Which physical quantity is a vector?', section: 'Physics & Mathematics', options: { A: 'Mass', B: 'Speed', C: 'Distance', D: 'Velocity', E: 'Time' }, correctAnswer: 'D', explanation: 'A **Vector** quantity has both magnitude and direction. **Velocity** fits this definition, while the others are scalar (magnitude only).' },
+            { id: 'PM8', questionText: 'What is the area of a circle with a radius of $4 \\text{ cm}$? (Use $\\pi \\approx 3$ for estimation)', section: 'Physics & Mathematics', options: { A: '$12 \\text{ cm}^2$', B: '$24 \\text{ cm}^2$', C: '$48 \\text{ cm}^2$', D: '$16 \\text{ cm}^2$', E: '$32 \\text{ cm}^2$' }, correctAnswer: 'C', explanation: 'Area $\\text{A} = \\pi r^2$. Using $r=4$ and $\\pi \\approx 3$, $\\text{A} \\approx 3 \\times 4^2 = 3 \\times 16 = **48 \\text{ cm}^2$**.' },
+            { id: 'PM9', questionText: 'The relationship between current ($\text{I}$), voltage ($\text{V}$), and resistance ($\text{R}$) is given by:', section: 'Physics & Mathematics', options: { A: '$V = IR$', B: '$I = VR$', C: '$R = V+I$', D: '$V = I/R$', E: '$I = V-R$' }, correctAnswer: 'A', explanation: 'This is **Ohm\'s Law**, which states that Voltage is equal to Current multiplied by Resistance: **$V = IR$**.' },
+            { id: 'PM10', questionText: 'What is the sum of the interior angles of a quadrilateral?', section: 'Physics & Mathematics', options: { A: '$180^\circ$', B: '$270^\circ$', C: '$360^\circ$', D: '$540^\circ$', E: '$90^\circ$' }, correctAnswer: 'C', explanation: 'The formula for the sum of interior angles of an $n$-sided polygon is $(n-2) \\times 180^\circ$. For a quadrilateral ($n=4$), $(4-2) \\times 180^\circ = 2 \\times 180^\circ = **360^\circ**$.' },
+            { id: 'PM11', questionText: 'If a transformer steps up the voltage, how does the current in the secondary coil compare to the primary coil?', section: 'Physics & Mathematics', options: { A: 'It increases', B: 'It decreases', C: 'It remains the same', D: 'It fluctuates rapidly', E: 'It becomes zero' }, correctAnswer: 'B', explanation: 'Due to the conservation of energy ($\text{Power} = \text{IV}$), if a transformer steps up the voltage ($\text{V}$), the current ($\text{I}$) must **decrease** proportionally to maintain the same power output.' },
+            { id: 'PM12', questionText: 'Simplify the expression: $3(x - 2) + 4x$.', section: 'Physics & Mathematics', options: { A: '$7x - 2$', B: '$7x - 6$', C: '$x - 6$', D: '$7x + 6$', E: '$4x - 6$' }, correctAnswer: 'B', explanation: 'Distribute the 3: $3x - 6 + 4x$. Combine $x$ terms: $(3x + 4x) - 6 = **7x - 6**$.' },
+            { id: 'PM13', questionText: 'The pressure exerted by a fluid increases with:', section: 'Physics & Mathematics', options: { A: 'Temperature only', B: 'Depth only', C: 'Density only', D: 'Both depth and density', E: 'Surface area' }, correctAnswer: 'D', explanation: 'Fluid pressure ($\text{P}$) is given by $\text{P} = \\rho \text{gh}$, where $\\rho$ is density, $\text{g}$ is gravity, and $\text{h}$ is depth. Pressure increases with both **depth and density**.' },
+            { id: 'PM14', questionText: 'What is the derivative of $f(x) = x^3$? (Basic calculus concept)', section: 'Physics & Mathematics', options: { A: '$3x$', B: '$3x^2$', C: '$x^4/4$', D: '$3x^3$', E: '$x^2$' }, correctAnswer: 'B', explanation: 'Using the power rule: $\\text{d}/\text{dx} (x^n) = nx^{n-1}$. Thus, $\\text{d}/\text{dx} (x^3) = **3x^2$**.' },
+            { id: 'PM15', questionText: 'The change in internal energy of a system is equal to the heat added to the system minus the work done by the system. This is the:', section: 'Physics & Mathematics', options: { A: 'Zeroth Law of Thermodynamics', B: 'First Law of Thermodynamics', C: 'Second Law of Thermodynamics', D: 'Third Law of Thermodynamics', E: 'Ideal Gas Law' }, correctAnswer: 'B', explanation: 'The **First Law of Thermodynamics** is the statement of the conservation of energy: $\\Delta U = Q - W$.' },
+            { id: 'PM16', questionText: 'Solve the system of equations for $y$: $x + y = 7$ and $x - y = 3$.', section: 'Physics & Mathematics', options: { A: '5', B: '4', C: '3', D: '2', E: '1' }, correctAnswer: 'D', explanation: 'Subtract the second equation from the first: $(x+y) - (x-y) = 7 - 3 \\rightarrow 2y = 4 \\rightarrow y = **2**$.' },
+            { id: 'PM17', questionText: 'Which physical process is responsible for the transfer of heat in a vacuum?', section: 'Physics & Mathematics', options: { A: 'Conduction', B: 'Induction', C: 'Convection', D: 'Radiation', E: 'Sublimation', E: 'Diffusion' }, correctAnswer: 'C', explanation: '***Radiation** (e.g., thermal electromagnetic waves) is the only method of heat transfer that does not require a medium and can occur through a vacuum.' },
+            { id: 'PM18', questionText: 'Find the logarithm: $\\log_{10}(1000)$.', section: 'Physics & Mathematics', options: { A: '1', B: '10', C: '3', D: '100', E: '0.1' }, correctAnswer: 'C', explanation: 'The logarithm asks: $10^{\mathbf{x}} = 1000$. Since $10^3 = 1000$, the answer is **3**.' },
+            { id: 'PM19', questionText: 'A $5 \\text{ kg}$ object is accelerating at $2 \\text{ m/s}^2$. What net force is acting on the object?', section: 'Physics & Mathematics', options: { A: '$2.5 \\text{ N}$', B: '$10 \\text{ N}$', C: '$7 \\text{ N}$', D: '$5 \\text{ N}$', E: '$0.4 \\text{ N}$' }, correctAnswer: 'B', explanation: 'Newton\'s Second Law: Force ($\text{F}$) = Mass ($\text{m}$) $\\times$ Acceleration ($\text{a}$). $\text{F} = 5 \\text{ kg} \\times 2 \\text{ m/s}^2 = **10 \\text{ N}$**.' },
+            { id: 'PM20', questionText: 'What is the approximate speed of light in a vacuum?', section: 'Physics & Mathematics', options: { A: '$3 \\times 10^5 \\text{ m/s}$', B: '$3 \\times 10^8 \\text{ m/s}$', C: '$3 \\times 10^{10} \\text{ m/s}$', D: '$1.5 \\times 10^8 \\text{ m/s}$', E: '$3 \\times 10^6 \\text{ m/s}$' }, correctAnswer: 'B', explanation: 'The speed of light ($c$) is approximately **$3 \\times 10^8 \\text{ m/s}$**.' },
+            { id: 'PM21', questionText: 'If $\\frac{x}{4} = 5$, then $x$ equals:', section: 'Physics & Mathematics', options: { A: '1.25', B: '20', C: '9', D: '1', E: '40' }, correctAnswer: 'B', explanation: 'Multiply both sides by 4: $x = 5 \\times 4 = **20**$.' },
+            { id: 'PM22', questionText: 'A wave has a frequency of $10 \\text{ Hz}$ and a wavelength of $2 \\text{ m}$. What is its wave speed?', section: 'Physics & Mathematics', options: { A: '$0.2 \\text{ m/s}$', B: '$5 \\text{ m/s}$', C: '$12 \\text{ m/s}$', D: '$20 \\text{ m/s}$', E: '$10 \\text{ m/s}$' }, correctAnswer: 'D', explanation: 'Wave speed ($v$) = Frequency ($f$) $\\times$ Wavelength ($\\lambda$). $v = 10 \\text{ Hz} \\times 2 \\text{ m} = **20 \\text{ m/s}$**.' },
+            { id: 'PM23', questionText: 'The absolute value $|-7|$ is:', section: 'Physics & Mathematics', options: { A: '$-7$', B: '$0$', C: '$7$', D: '$14$', E: '$49$' }, correctAnswer: 'C', explanation: 'The absolute value of a number is its distance from zero, so $|-7| = **7**$.' },
+            { id: 'PM24', questionText: 'The process of charging an uncharged object by bringing a charged object near it (without physical contact) is called:', section: 'Physics & Mathematics', options: { A: 'Conduction', B: 'Induction', C: 'Convection', D: 'Polarization', E: 'Magnetization' }, correctAnswer: 'B', explanation: 'Electrostatic **Induction** is the process where a charged object induces a temporary charge separation (polarization) in a nearby neutral object.' },
+            { id: 'PM25', questionText: 'The domain of the function $f(x) = \\sqrt{x-4}$ is:', section: 'Physics & Mathematics', options: { A: '$x > 4$', B: '$x < 4$', C: '$x \\ge 4$', D: '$x \\le 4$', E: 'All real numbers' }, correctAnswer: 'C', explanation: 'The expression under the square root must be non-negative: $x - 4 \\ge 0$, which means $x \\ge 4$.' },
+
+            // GENERAL KNOWLEDGE (25 Questions)
+            { id: 'GK1', questionText: 'Which famous scientist developed the theory of General Relativity?', section: 'General Knowledge', options: { A: 'Isaac Newton', B: 'Galileo Galilei', C: 'Stephen Hawking', D: 'Albert Einstein', E: 'Marie Curie' }, correctAnswer: 'D', explanation: 'The theory of General Relativity was published by **Albert Einstein** in 1915.' },
+            { id: 'GK2', questionText: 'The international organization responsible for maintaining global peace and security is the:', section: 'General Knowledge', options: { A: 'European Union (EU)', B: 'World Bank', C: 'United Nations (UN)', D: 'NATO', E: 'World Trade Organization (WTO)' }, correctAnswer: 'C', explanation: 'The **United Nations (UN)** is the primary global body mandated to address global security issues.' },
+            { id: 'GK3', questionText: 'What is the capital city of Australia?', section: 'General Knowledge', options: { A: 'Sydney', B: 'Melbourne', C: 'Canberra', D: 'Perth', E: 'Brisbane' }, correctAnswer: 'C', explanation: 'The capital of Australia is **Canberra**, not its largest city, Sydney.' },
+            { id: 'GK4', questionText: 'The period of European history known as the Renaissance began in which country?', section: 'General Knowledge', options: { A: 'France', B: 'England', C: 'Germany', D: 'Spain', E: 'Italy' }, correctAnswer: 'E', explanation: 'The Renaissance, meaning "rebirth," originated in the city-states of **Italy** during the 14th century.' },
+            { id: 'GK5', questionText: 'Who wrote the play *Romeo and Juliet*?', section: 'General Knowledge', options: { A: 'Charles Dickens', B: 'William Shakespeare', C: 'Jane Austen', D: 'Geoffrey Chaucer', E: 'George Orwell' }, correctAnswer: 'B', explanation: 'The tragic romance *Romeo and Juliet* was written by **William Shakespeare**.' },
+            { id: 'GK6', questionText: 'The process by which plants convert light energy into chemical energy is called:', section: 'General Knowledge', options: { A: 'Respiration', B: 'Transpiration', C: 'Photosynthesis', D: 'Osmosis', E: 'Fermentation' }, correctAnswer: 'C', explanation: '**Photosynthesis** uses light, water, and carbon dioxide to create glucose (chemical energy) and oxygen.' },
+            { id: 'GK7', questionText: 'The chemical symbol for gold is:', section: 'General Knowledge', options: { A: 'Ag', B: 'Au', C: 'Fe', D: 'Gd', E: 'Hg' }, correctAnswer: 'B', explanation: 'The symbol for gold, **Au**, comes from its Latin name, *aurum*.' },
+            { id: 'GK8', questionText: 'Which year marked the end of World War II?', section: 'General Knowledge', options: { A: '1918', B: '1939', C: '1945', D: '1950', E: '1941' }, correctAnswer: 'C', explanation: 'World War II ended with the surrender of Japan in **1945**.' },
+            { id: 'GK9', questionText: 'The concept of *tabula rasa* (blank slate) is most associated with which philosopher?', section: 'General Knowledge', options: { A: 'Socrates', B: 'René Descartes', C: 'John Locke', D: 'Immanuel Kant', E: 'Friedrich Nietzsche' }, correctAnswer: 'C', explanation: '**John Locke** famously argued that the human mind is a *tabula rasa* at birth, shaped entirely by experience.' },
+            { id: 'GK10', questionText: 'Which Italian city is famous for its extensive network of canals?', section: 'General Knowledge', options: { A: 'Rome', B: 'Florence', C: 'Milan', D: 'Venice', E: 'Naples' }, correctAnswer: 'D', explanation: 'The historic city of **Venice** is built on a series of islands and is renowned for its canals and gondolas.' },
+            { id: 'GK11', questionText: 'The political term "Cold War" primarily refers to the geopolitical tension between which two major powers?', section: 'General Knowledge', options: { A: 'Germany and France', B: 'United States and Japan', C: 'United States and Soviet Union (USSR)', D: 'China and India', E: 'Great Britain and Spain' }, correctAnswer: 'C', explanation: 'The Cold War was a state of geopolitical tension between the **United States and the Soviet Union (USSR)** and their respective allies.' },
+            { id: 'GK12', questionText: 'Which planet in our solar system is known for the Great Red Spot?', section: 'General Knowledge', options: { A: 'Mars', B: 'Venus', C: 'Saturn', D: 'Jupiter', E: 'Uranus' }, correctAnswer: 'D', explanation: 'The Great Red Spot is a persistent high-pressure storm system on the planet **Jupiter**.' },
+            { id: 'GK13', questionText: 'Who is considered the founder of modern nursing?', section: 'General Knowledge', options: { A: 'Clara Barton', B: 'Florence Nightingale', C: 'Mary Seacole', D: 'Elizabeth Fry', E: 'Mother Teresa' }, correctAnswer: 'B', explanation: '**Florence Nightingale** is widely regarded as the foundational philosopher of modern nursing.' },
+            { id: 'GK14', questionText: 'Which of the following is an example of a greenhouse gas?', section: 'General Knowledge', options: { A: 'Nitrogen ($\\text{N}_2$)', B: 'Oxygen ($\\text{O}_2$)', C: 'Argon ($\text{Ar}$)', D: 'Methane ($\text{CH}_4$)', E: 'Hydrogen ($\text{H}_2$)' }, correctAnswer: 'D', explanation: '**Methane ($\text{CH}_4$)** is a potent greenhouse gas, along with carbon dioxide and water vapor.' },
+            { id: 'GK15', questionText: 'The famous statue *David* was sculpted by which Renaissance artist?', section: 'General Knowledge', options: { A: 'Leonardo da Vinci', B: 'Raphael', C: 'Michelangelo', D: 'Donatello', E: 'Titian' }, correctAnswer: 'C', explanation: 'The marble statue of *David* was created by **Michelangelo** Buonarroti.' },
+            { id: 'GK16', questionText: 'Which political system is characterized by the belief that all property is publicly owned and each person works and is paid according to their abilities and needs?', section: 'General Knowledge', options: { A: 'Capitalism', B: 'Socialism', C: 'Communism', D: 'Fascism', E: 'Monarchy' }, correctAnswer: 'C', explanation: '**Communism** is a political and economic system aiming for a society in which all property is communally owned and resources are distributed based on need.' },
+            { id: 'GK17', questionText: 'The official currency used by the majority of European Union member states is the:', section: 'General Knowledge', options: { A: 'Pound Sterling', B: 'Euro', C: 'Swiss Franc', D: 'US Dollar', E: 'Yen' }, correctAnswer: 'B', explanation: 'The **Euro** is the currency used by the Eurozone, which comprises 20 of the 27 member states of the European Union.' },
+            { id: 'GK18', questionText: 'The concept of "natural selection" was first published by:', section: 'General Knowledge', options: { A: 'Gregor Mendel', B: 'Alfred Wallace', C: 'Jean-Baptiste Lamarck', D: 'Charles Darwin', E: 'Carl Linnaeus' }, correctAnswer: 'D', explanation: '**Charles Darwin** published his theory of evolution by natural selection in *On the Origin of Species* (1859).' },
+            { id: 'GK19', questionText: 'Which ancient civilization is credited with inventing the concept of zero as a number?', section: 'General Knowledge', options: { A: 'Greek', B: 'Roman', C: 'Egyptian', D: 'Mayan and Indian', E: 'Babylonian' }, correctAnswer: 'D', explanation: 'The concept of zero was developed independently by the **Mayan** civilization and by mathematicians in **India**.' },
+            { id: 'GK20', questionText: 'The famous "I Have a Dream" speech was delivered by:', section: 'General Knowledge', options: { A: 'Nelson Mandela', B: 'Malcolm X', C: 'Martin Luther King Jr.', D: 'John F. Kennedy', E: 'Barack Obama' }, correctAnswer: 'C', explanation: '**Martin Luther King Jr.** delivered the iconic speech during the March on Washington for Jobs and Freedom in 1963.' },
+            { id: 'GK21', questionText: 'The largest human organ is the:', section: 'General Knowledge', options: { A: 'Liver', B: 'Heart', C: 'Brain', D: 'Skin', E: 'Lungs' }, correctAnswer: 'D', explanation: 'The **Skin** is the largest organ of the human body by both weight and surface area.' },
+            { id: 'GK22', questionText: 'The Suez Canal connects the Mediterranean Sea to which other body of water?', section: 'General Knowledge', options: { A: 'Atlantic Ocean', B: 'Black Sea', C: 'Red Sea', D: 'Persian Gulf', E: 'Indian Ocean' }, correctAnswer: 'C', explanation: 'The Suez Canal provides a direct route between the Mediterranean Sea and the **Red Sea**.' },
+            { id: 'GK23', questionText: 'The philosophical movement that dominated Europe in the 18th century and emphasized reason, individualism, and skepticism was the:', section: 'General Knowledge', options: { A: 'Romanticism', B: 'Baroque', C: 'Enlightenment', D: 'Existentialism', E: 'Modernism' }, correctAnswer: 'C', explanation: 'The **Enlightenment** (or Age of Reason) was central to intellectual and philosophical life in the 18th century.' },
+            { id: 'GK24', questionText: 'Which gas makes up the largest percentage of Earth\'s atmosphere?', section: 'General Knowledge', options: { A: 'Oxygen', B: 'Carbon Dioxide', C: 'Argon', D: 'Nitrogen', E: 'Helium' }, correctAnswer: 'D', explanation: 'The Earth\'s atmosphere is composed of approximately 78% **Nitrogen** ($\text{N}_2$).' },
+            { id: 'GK25', questionText: 'The economic term for a general increase in prices and fall in the purchasing value of money is:', section: 'General Knowledge', options: { A: 'Recession', B: 'Deflation', C: 'Stagflation', D: 'Inflation', E: 'Depression' }, correctAnswer: 'D', explanation: '**Inflation** is the sustained increase in the general price level of goods and services, leading to a fall in purchasing power.' },
         ];
 
 
@@ -388,7 +378,6 @@
         function getPrivateDocRef(docName) {
             if (!userId || !db) return null;
             // FIX: Document references must have an even number of segments (Collection/Document/C/D/C/D).
-            // We insert a 'settings' collection name to achieve the 6-segment path required by security rules.
             // Path: /artifacts/{appId}/users/{userId}/settings/{docName}
             return doc(db, 'artifacts', appId, 'users', userId, 'settings', docName);
         }
@@ -488,7 +477,7 @@
         }
 
         async function generateIMATQuestions(query) {
-            const systemPrompt = "You are a highly specialized exam question generator for the International Medical Admissions Test (IMAT). Your task is to generate challenging, multiple-choice questions (5 options: A-E) strictly based on the IMAT syllabus topics (Biology, Chemistry, Physics, Mathematics, Logical Reasoning, General Knowledge). Ensure the correct answer is unambiguously one of the options. Output must be a JSON array.";
+            const systemPrompt = "You are a highly specialized exam question generator for the International Medical Admissions Test (IMAT). Your task is to generate challenging, multiple-choice questions (5 options: A-E) strictly based on the IMAT syllabus topics (Biology, Chemistry, Physics, Mathematics, Logical Reasoning, General Knowledge). Ensure the correct answer is unambiguously one of the options. Output must be a JSON array. Use LaTeX style notation for all mathematical formulas and chemical symbols (e.g., $E=mc^2$ or $\\text{H}_2\\text{O}$).";
             
             const responseSchema = {
                 type: "ARRAY",
@@ -509,7 +498,7 @@
                             }
                         },
                         "correctAnswer": { "type": "STRING", "enum": ["A", "B", "C", "D", "E"], "description": "The letter corresponding to the correct option." },
-                        "explanation": { "type": "STRING", "description": "A detailed explanation for why the chosen option is correct and why others are incorrect." }
+                        "explanation": { "type": "STRING", "description": "A detailed explanation for why the chosen option is correct and why others are incorrect. Use LaTeX style notation." }
                     },
                     required: ["id", "questionText", "section", "options", "correctAnswer", "explanation"]
                 }
@@ -558,32 +547,7 @@
             }
         }
         
-        async function startFullMockExam() {
-            if (STATE.loading) return;
-
-            // Generate a query for 60 questions based on IMAT breakdown
-            const sectionQueries = IMAT_SECTIONS.map(s => `${s.count} questions on ${s.name}`).join(', ');
-            const query = `Generate a full 60-question IMAT mock exam. Provide the following breakdown: ${sectionQueries}.`;
-
-            showMessage("Generating 60 custom IMAT questions. This may take up to a minute...", 'success');
-            const questions = await generateIMATQuestions(query);
-
-            if (questions.length === 0) return;
-
-            STATE.currentMock = {
-                questions: questions,
-                userAnswers: {},
-                startTime: Date.now(),
-                // Full mock is timed for 100 minutes
-                timeLeft: 100 * 60, 
-                isFinished: false,
-                type: 'mock'
-            };
-
-            STATE.currentPage = 'mock_exam';
-            renderApp();
-            startMockTimer();
-        }
+        // Removed startFullMockExam as it consistently timed out with 60 questions.
 
         async function startQuiz(quizQuestions) {
              if (STATE.loading) return;
@@ -632,7 +596,7 @@
             renderApp();
         }
 
-        // --- 5. STUDY PLAN LOGIC ---
+        // --- 5. STUDY PLAN LOGIC (OVERHAULED) ---
 
         function generatePlan() {
             const examDateStr = STATE.userData.examDate;
@@ -645,49 +609,84 @@
                 STATE.userData.studyPlan = [{ task: "The exam is today or has passed! Time for revision!", days: 0, section: "ALL" }];
                 return;
             }
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
             const totalWeight = IMAT_SECTIONS.reduce((sum, s) => sum + s.weight, 0);
 
+            // Allocate days based on weight (higher weight = more days)
+            const allocatedDays = IMAT_SECTIONS.map(s => ({
+                ...s,
+                days: Math.max(1, Math.round(totalDays * (s.weight / totalWeight)))
+            }));
+
+            // Recalculate total days used to account for rounding errors
+            const totalDaysAllocated = allocatedDays.reduce((sum, s) => sum + s.days, 0);
+            const adjustment = totalDays - totalDaysAllocated;
+
+            // Apply minor adjustments to prevent phase overlap if rounding was off
+            if (adjustment > 0) {
+                // Add remaining days to the most heavily weighted subject (Biology)
+                const biology = allocatedDays.find(s => s.name === 'Biology');
+                if (biology) biology.days += adjustment;
+            }
+
+
             let studyPlan = [];
-            let remainingDays = diffDays;
-            let daysUsed = 0;
+            let daysAccumulated = 0;
 
-            // Phase 1: Foundation (30% of time)
-            let phase1Days = Math.floor(diffDays * 0.3);
-            if (phase1Days > 0) {
-                studyPlan.push({ days: phase1Days, task: "Phase 1: Foundation & Diagnostics", section: "ALL" });
-                daysUsed += phase1Days;
+            // Define study phases
+            const phases = [
+                { name: "Phase 1: Foundation (60% Time)", ratio: 0.60, task: "Mastering Core Syllabus & Weak Areas" },
+                { name: "Phase 2: Consolidation (30% Time)", ratio: 0.30, task: "Advanced Problem Solving & Time Management" },
+                { name: "Phase 3: Final Blitz (10% Time)", ratio: 0.10, task: "Mock Review & Memorization Blitz" },
+            ];
+
+            // Calculate days per phase
+            let remainingPhaseDays = totalDays;
+            
+            phases.forEach(phase => {
+                let phaseDays = Math.floor(totalDays * phase.ratio);
                 
-                IMAT_SECTIONS.forEach(s => {
-                    const days = Math.max(1, Math.round(phase1Days * (s.weight / totalWeight)));
-                    studyPlan.push({ days: days, task: `Core concepts for ${s.name} (${days} days total)`, section: s.name });
-                });
+                // Ensure phase days don't exceed what's left
+                if (phaseDays > remainingPhaseDays) {
+                    phaseDays = remainingPhaseDays;
+                }
+                
+                remainingPhaseDays -= phaseDays;
+
+                if (phaseDays > 0) {
+                    daysAccumulated += phaseDays;
+                    const phaseStartDay = totalDays - daysAccumulated + 1; // Count down from total days
+
+                    studyPlan.push({ days: phaseDays, task: `START: ${phase.name} (Days ${phaseStartDay} to ${totalDays - daysAccumulated + phaseDays})`, section: "ALL", type: 'PHASE_START' });
+
+                    if (phase.name.includes("Foundation")) {
+                        allocatedDays.forEach(s => {
+                            const daysForSubject = Math.max(1, Math.round(phaseDays * (s.weight / totalWeight)));
+                            studyPlan.push({ days: daysForSubject, task: `[${s.name}] Detailed topic review, flashcards, and basic equation memorization.`, section: s.name, type: 'SUBJECT_FOCUS' });
+                        });
+                    } else if (phase.name.includes("Consolidation")) {
+                        allocatedDays.forEach(s => {
+                            const daysForSubject = Math.max(1, Math.round(phaseDays * (s.weight / totalWeight)));
+                            studyPlan.push({ days: daysForSubject, task: `[${s.name}] Practicing dynamic quizzes (30Q batches) and advanced critical thinking problems.`, section: s.name, type: 'SUBJECT_FOCUS' });
+                        });
+                        studyPlan.push({ days: Math.max(1, Math.floor(phaseDays * 0.1)), task: "Simulated Mock Exam practice & detailed analysis.", section: "ALL", type: 'MOCK_EXAM' });
+                    } else if (phase.name.includes("Blitz")) {
+                        studyPlan.push({ days: Math.max(1, Math.floor(phaseDays / 2)), task: "Final review of high-yield content and error logs.", section: "ALL", type: 'FINAL_REVIEW' });
+                        studyPlan.push({ days: Math.max(1, phaseDays - Math.floor(phaseDays / 2)), task: "Practice pre-generated quizzes for confidence boost and speed.", section: "ALL", type: 'FINAL_QUIZ' });
+                    }
+                }
+            });
+            
+            // If any days were left over (due to rounding), push them to the end
+            if (remainingPhaseDays > 0) {
+                 studyPlan.push({ days: remainingPhaseDays, task: "BONUS DAYS: Light review and rest.", section: "ALL", type: 'FINAL_REVIEW' });
             }
 
-            // Phase 2: Comprehensive Review (50% of time)
-            let phase2Days = Math.floor(diffDays * 0.5);
-            if (phase2Days > 0) {
-                studyPlan.push({ days: phase2Days, task: "Phase 2: Deep Review & Practice", section: "ALL" });
-                daysUsed += phase2Days;
-
-                IMAT_SECTIONS.forEach(s => {
-                    const days = Math.max(1, Math.round(phase2Days * (s.weight / totalWeight)));
-                    studyPlan.push({ days: days, task: `Advanced topics & Quizzes for ${s.name} (${days} days total)`, section: s.name });
-                });
-            }
-
-            // Phase 3: Mock Exams & Final Revision (Remaining days)
-            let phase3Days = diffDays - daysUsed;
-            if (phase3Days > 0) {
-                studyPlan.push({ days: phase3Days, task: "Phase 3: Full Mocks & Weak Spot Blitz", section: "ALL" });
-                studyPlan.push({ days: Math.floor(phase3Days / 2), task: `Full Mock Exams (Timed) & Review`, section: "ALL" });
-                studyPlan.push({ days: Math.ceil(phase3Days / 2), task: `Intensive review of weakest topics`, section: "ALL" });
-            }
 
             STATE.userData.studyPlan = studyPlan.filter(p => p.days > 0);
             saveUserData();
-            showMessage("Study plan generated based on your exam date!");
+            showMessage("In-depth study plan generated based on your exam date!");
             renderApp();
         }
 
@@ -696,33 +695,10 @@
 
         let mockTimerInterval = null;
 
+        // The timer function is kept but is only relevant if we re-introduce timed mocks later.
         function startMockTimer() {
-            if (mockTimerInterval) clearInterval(mockTimerInterval);
-            if (STATE.currentMock.type !== 'mock') return; // Only start timer for full mocks
-
-            mockTimerInterval = setInterval(() => {
-                if (!STATE.currentMock || STATE.currentMock.isFinished) {
-                    clearInterval(mockTimerInterval);
-                    mockTimerInterval = null;
-                    return;
-                }
-
-                STATE.currentMock.timeLeft--;
-
-                if (STATE.currentMock.timeLeft <= 0) {
-                    clearInterval(mockTimerInterval);
-                    finishMockExam();
-                    showMessage("Time's up! The mock exam has automatically submitted.", 'error');
-                }
-                
-                // Only re-render the timer display
-                const timerEl = document.getElementById('mock-timer-display');
-                if (timerEl) {
-                    const minutes = Math.floor(STATE.currentMock.timeLeft / 60);
-                    const seconds = STATE.currentMock.timeLeft % 60;
-                    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }
-            }, 1000);
+             // Currently disabled as full mocks are removed due to timeout issues.
+             return;
         }
 
         function finishMockExam() {
@@ -907,13 +883,13 @@
         function renderMockSetup() {
             const sectionsWithPreGen = IMAT_SECTIONS.filter(s => PRE_GENERATED_QUIZ_QUESTIONS.some(q => q.section === s.name));
             
-            const preGeneratedQuizzes = sectionsWithPreGen.map(section => {
+            const preGeneratedQuizzes = IMAT_SECTIONS.map(section => {
                 const quizData = PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === section.name);
                 if (quizData.length > 0) {
                     return `
                         <div class="bg-white p-5 rounded-xl shadow-md border border-gray-200">
                             <h4 class="text-xl font-semibold text-gray-800">${section.name} Quiz</h4>
-                            <p class="text-gray-600 text-sm mb-3">Quick revision quiz (${quizData.length} questions).</p>
+                            <p class="text-gray-600 text-sm mb-3">Instant revision quiz (${quizData.length} questions).</p>
                             <button onclick="window.startQuiz(window.PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === '${section.name}'))" 
                                 class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center">
                                 <i data-lucide="zap" class="h-4 w-4 mr-1"></i> Start Instant Quiz
@@ -929,39 +905,19 @@
                 <div class="max-w-4xl mx-auto space-y-8 bg-white p-6 rounded-xl shadow-lg">
                     <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-4">Practice Modes</h2>
                     
-                    <!-- 1. Full AI Mock Exam -->
-                    <div class="space-y-4 p-5 bg-indigo-50 rounded-xl border-l-4 border-indigo-500">
-                        <h3 class="text-2xl font-bold text-indigo-800">Full Simulated Mock Exam (AI Generated)</h3>
-                        <p class="text-lg text-indigo-700">
-                            Generate a new, full IMAT mock exam (60 questions, 100 minutes) based on the official syllabus structure. 
+                    <!-- 1. Full Mock Exam removed to ensure stability -->
+                    <div class="space-y-4 p-5 bg-red-50 rounded-xl border-l-4 border-red-500">
+                        <h3 class="text-2xl font-bold text-red-800">Full 60-Question Mock Exam (Temporarily Removed)</h3>
+                        <p class="text-lg text-red-700">
+                            The feature to generate 60 questions at once has been removed because it consistently causes **"Fail to Generate" errors** due to connection timeouts. Please use the two reliable methods below for practice.
                         </p>
-                        <div class="flex items-center p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
-                            <i data-lucide="alert-triangle" class="text-yellow-500 h-6 w-6 mr-3"></i>
-                            <p class="text-sm text-yellow-800">
-                                **Note:** Generating 60 questions can take 30-60 seconds due to AI processing.
-                            </p>
-                        </div>
-
-                        <div class="flex justify-center pt-2">
-                            <button onclick="window.startFullMockExam()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200 ease-in-out shadow-lg transform hover:scale-105 disabled:opacity-50 flex items-center"
-                                id="start-mock-button"
-                                ${STATE.loading ? 'disabled' : ''}>
-                                <i data-lucide="play" class="h-6 w-6 mr-2"></i>
-                                ${STATE.loading ? 'Generating...' : 'Start Full 100-Minute Mock'}
-                            </button>
-                        </div>
-                        
-                        <div id="loading-message" class="text-center text-indigo-600 font-medium mt-4 ${STATE.loading ? 'block' : 'hidden'}">
-                            <div class="animate-pulse">The AI is crafting your 60 unique IMAT questions now...</div>
-                        </div>
                     </div>
 
-                    <!-- 2. Dynamic AI Quizzes -->
+                    <!-- 2. Dynamic AI Quizzes (Still Available, Best for Unlimited Questions) -->
                     <div class="space-y-4 p-5 bg-green-50 rounded-xl border-l-4 border-green-500">
-                        <h3 class="text-2xl font-bold text-green-800">Dynamic AI Quick Quizzes (Generate 1000s)</h3>
+                        <h3 class="text-2xl font-bold text-green-800">Dynamic AI Quick Quizzes (Generate Unlimited Questions)</h3>
                         <p class="text-lg text-green-700">
-                            Instantly generate a custom number of unique, untimed questions for any section. This provides unlimited practice.
+                            Instantly generate a custom number of unique, untimed questions for any section. **Max 30 questions at a time for highest reliability.**
                         </p>
                         <div class="grid sm:grid-cols-3 gap-3 items-end">
                             <div class="col-span-1">
@@ -986,20 +942,12 @@
 
                     <!-- 3. Quick Quizzes -->
                     <div class="space-y-4 pt-4">
-                        <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">Quick Revision Quizzes (Pre-Generated)</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">Quick Revision Quizzes (Instant Load - ${PRE_GENERATED_QUIZ_QUESTIONS.length} Questions Total)</h3>
                         <p class="text-gray-600">
-                            Jump straight into topic-specific practice with guaranteed instant-load questions and answers.
+                            These quizzes are **embedded** in the file and load instantly for 100% reliability. Use these guaranteed questions for quick review.
                         </p>
                         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
                             ${preGeneratedQuizzes}
-                            
-                            <!-- Placeholder for future quizzes -->
-                            ${IMAT_SECTIONS.filter(s => !sectionsWithPreGen.includes(s)).map(s => `
-                                <div class="p-5 bg-gray-100 rounded-xl shadow-md border border-gray-200 flex flex-col justify-center items-center text-center">
-                                    <i data-lucide="file-text" class="h-6 w-6 text-gray-500 mb-2"></i>
-                                    <p class="text-gray-500 font-medium">${s.name} Quiz (Coming Soon!)</p>
-                                </div>
-                            `).join('')}
                         </div>
                     </div>
                 </div>
@@ -1111,7 +1059,7 @@
                             
                             <button onclick="window.finishMockExam()"
                                 class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200 shadow-md transform hover:scale-105">
-                                <i data-lucide="flag" class="h-5 w-5 mr-1"></i> ${type === 'mock' ? 'Submit Exam' : 'Finish Quiz & Review'}
+                                <i data-lucide="flag" class="h-5 w-5 mr-1"></i> Finish Quiz & Review
                             </button>
 
                             <button onclick="window.nextQuestion()" ${currentQuestionIndex === questions.length - 1 ? 'disabled' : ''}
@@ -1236,22 +1184,40 @@
                     </div>
                     
                     <!-- Study Plan Details -->
-                    <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Recommended Study Schedule</h3>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Recommended Study Schedule (${STATE.userData.studyPlan.length > 0 ? daysLeft + ' Days Total' : 'Set Date Above'})</h3>
                     
                     ${STATE.userData.studyPlan.length > 0 ? `
                         <div class="space-y-4">
                             ${STATE.userData.studyPlan.map(item => {
                                 let color = 'bg-gray-100 border-gray-300 text-gray-800';
-                                if (item.section === 'ALL') color = 'bg-indigo-100 border-indigo-400 text-indigo-800 font-bold';
-                                if (item.section === 'Biology') color = 'bg-green-100 border-green-400 text-green-800';
-                                if (item.section === 'Chemistry') color = 'bg-yellow-100 border-yellow-400 text-yellow-800';
-                                if (item.section.includes('Physics')) color = 'bg-red-100 border-red-400 text-red-800';
+                                let icon = 'book-open';
                                 
+                                if (item.type === 'PHASE_START') {
+                                    color = 'bg-indigo-600 border-indigo-600 text-white font-bold';
+                                    icon = 'flag';
+                                } else if (item.type === 'SUBJECT_FOCUS') {
+                                    if (item.section === 'Biology') { color = 'bg-green-100 border-green-500 text-green-800'; icon = 'leaf'; }
+                                    else if (item.section === 'Chemistry') { color = 'bg-yellow-100 border-yellow-500 text-yellow-800'; icon = 'atom'; }
+                                    else if (item.section.includes('Physics')) { color = 'bg-red-100 border-red-500 text-red-800'; icon = 'zap'; }
+                                    else if (item.section.includes('Logical')) { color = 'bg-purple-100 border-purple-500 text-purple-800'; icon = 'brain'; }
+                                    else if (item.section.includes('General')) { color = 'bg-blue-100 border-blue-500 text-blue-800'; icon = 'globe'; }
+                                    icon = (item.section.includes('Logical') || item.section.includes('General')) ? 'lightbulb' : icon;
+                                } else if (item.type === 'MOCK_EXAM') {
+                                    color = 'bg-orange-100 border-orange-500 text-orange-800 font-semibold';
+                                    icon = 'clock';
+                                } else if (item.type.includes('FINAL')) {
+                                    color = 'bg-pink-100 border-pink-500 text-pink-800';
+                                    icon = 'check-circle';
+                                }
+
                                 return `
                                     <div class="p-4 rounded-lg border-l-8 ${color} shadow-sm flex justify-between items-center">
-                                        <div>
-                                            <p class="text-lg font-semibold">${item.task}</p>
-                                            <p class="text-sm opacity-80">${item.section}</p>
+                                        <div class="flex items-start space-x-3">
+                                            <i data-lucide="${icon}" class="h-5 w-5 ${item.type === 'PHASE_START' ? 'text-white' : 'text-gray-700'}"></i>
+                                            <div>
+                                                <p class="text-lg font-semibold">${item.task}</p>
+                                                <p class="text-sm opacity-80">${item.section}</p>
+                                            </div>
                                         </div>
                                         <span class="text-xl font-black">${item.days} ${item.days === 1 ? 'Day' : 'Days'}</span>
                                     </div>
@@ -1280,7 +1246,7 @@
         // --- 8. EVENT HANDLERS (EXPOSED TO WINDOW) ---
 
         window.navigate = navigate;
-        window.startFullMockExam = startFullMockExam;
+        // window.startFullMockExam = startFullMockExam; // Removed due to instability
         window.startQuiz = startQuiz; // Exposed for quiz buttons
         window.startAiQuiz = startAiQuiz; // Exposed for dynamic AI quiz
         window.generatePlan = generatePlan;
