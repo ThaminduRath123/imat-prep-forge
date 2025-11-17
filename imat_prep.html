@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAT Prep Forge</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom styles to ensure smooth scrolling and typography */
+        :root {
+            --primary: #1e3a8a; /* Dark Blue */
+            --secondary: #3b82f6; /* Medium Blue */
+            --accent: #ef4444; /* Red for alerts/errors */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* Light slate background */
+        }
+        .scrollable-content {
+            max-height: calc(100vh - 8rem); /* Adjust based on header/footer size */
+            overflow-y: auto;
+        }
+        /* Custom scrollbar for aesthetics */
+        .scrollable-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 3px;
+        }
+        .nav-link.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .question-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="graduation-cap" class="text-indigo-600 h-8 w-8"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">IMAT Prep Forge</h1>
+                </div>
+                <div id="nav-container" class="flex space-x-6">
+                    <!-- Nav links inserted here by JS -->
+                </div>
+                <div id="auth-status" class="text-sm text-gray-500">
+                    Loading Auth...
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <!-- Message Box -->
+        <div id="message-box" class="fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0 hidden" role="alert"></div>
+
+        <!-- Main View Container -->
+        <div id="app-view" class="scrollable-content">
+            <!-- Content will be rendered here -->
+            <div class="flex justify-center items-center h-96">
+                <div class="text-center">
+                    <div id="loading-spinner" class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4 hidden"></div>
+                    <p class="text-gray-500" id="initial-load-text">Initializing application...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto py-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+            <p>&copy; 2025 IMAT Prep Forge. Practice powered by Gemini API. User ID: <span id="footer-user-id">N/A</span></p>
+        </div>
+    </footer>
+
+    <!-- Firebase and Application Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, limit, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- 1. CONFIGURATION AND INITIALIZATION ---
+        
+        // MANDATORY GLOBALS
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        setLogLevel('Debug');
+        
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        const EXAM_DEFAULT_DATE = new Date(new Date().setMonth(new Date().getMonth() + 3)); // 3 months from now
+        
+        const STATE = {
+            currentPage: 'dashboard',
+            userData: {
+                examDate: EXAM_DEFAULT_DATE.toISOString().split('T')[0], // YYYY-MM-DD
+                mockScores: [],
+                studyPlan: []
+            },
+            questions: [],
+            currentMock: null,
+            loading: false
+        };
+
+        const IMAT_SECTIONS = [
+            { name: "General Knowledge", count: 4, weight: 1 },
+            { name: "Logical Reasoning", count: 5, weight: 1 },
+            { name: "Biology", count: 23, weight: 3 },
+            { name: "Chemistry", count: 15, weight: 2 },
+            { name: "Physics & Mathematics", count: 13, weight: 2 }
+        ];
+
+        const API_KEY = "";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        const QUESTION_GENERATION_MODEL = 'gemini-2.5-flash-preview-09-2025';
+
+        // --- PRE-GENERATED QUIZ DATA (EXPANDED) ---
+        // A short set of high-quality questions for quick, non-AI quizzes
+        const PRE_GENERATED_QUIZ_QUESTIONS = [
+            // BIOLOGY
+            {
+                id: 'PQ1',
+                questionText: 'Which of the following cellular organelles is primarily responsible for generating the vast majority of ATP through aerobic respiration in eukaryotic cells?',
+                section: 'Biology',
+                options: {
+                    A: 'Ribosome',
+                    B: 'Endoplasmic Reticulum',
+                    C: 'Mitochondrion',
+                    D: 'Lysosome',
+                    E: 'Golgi Apparatus'
+                },
+                correctAnswer: 'C',
+                explanation: 'The **Mitochondrion** is the powerhouse of the eukaryotic cell. It is the site of cellular respiration, which produces the most ATP (energy) from glucose.'
+            },
+            {
+                id: 'PQ2',
+                questionText: 'What is the primary function of DNA ligase in molecular biology?',
+                section: 'Biology',
+                options: {
+                    A: 'To unwind the DNA double helix.',
+                    B: 'To synthesize new DNA strands from a template.',
+                    C: 'To separate DNA fragments by size.',
+                    D: 'To join Okazaki fragments on the lagging strand.',
+                    E: 'To remove introns from mRNA.'
+                },
+                correctAnswer: 'D',
+                explanation: '**DNA ligase** acts as molecular glue, specifically joining the small DNA segments (Okazaki fragments) created during replication of the lagging strand into a continuous strand.'
+            },
+            // CHEMISTRY
+            {
+                id: 'PQ3',
+                questionText: 'If 20g of NaOH (Molar mass 40 g/mol) is dissolved in enough water to make 500 mL of solution, what is the molar concentration (M) of the solution?',
+                section: 'Chemistry',
+                options: {
+                    A: '0.5 M',
+                    B: '1.0 M',
+                    C: '1.5 M',
+                    D: '2.0 M',
+                    E: '4.0 M'
+                },
+                correctAnswer: 'B',
+                explanation: '1. Calculate moles of NaOH: Moles = Mass / Molar Mass = 20g / 40 g/mol = 0.5 moles. 2. Convert volume to Liters: 500 mL = 0.5 L. 3. Calculate Molarity: Molarity = Moles / Volume (L) = 0.5 moles / 0.5 L = **1.0 M**.'
+            },
+            {
+                id: 'PQ4',
+                questionText: 'Which type of chemical bond involves the complete transfer of valence electron(s) between atoms?',
+                section: 'Chemistry',
+                options: {
+                    A: 'Covalent bond',
+                    B: 'Hydrogen bond',
+                    C: 'Metallic bond',
+                    D: 'Ionic bond',
+                    E: 'Polar covalent bond'
+                },
+                correctAnswer: 'D',
+                explanation: 'An **Ionic bond** is formed when one atom completely transfers one or more electrons to another, resulting in attractive electrostatic forces between oppositely charged ions.'
+            },
+            // LOGICAL REASONING
+            {
+                id: 'PQ5',
+                questionText: '**Argument:** All successful doctors studied diligently. Jane is a successful doctor. Therefore, Jane studied diligently. **Which one of the following best describes the logical structure of this argument?**',
+                section: 'Logical Reasoning',
+                options: {
+                    A: 'It contains a sampling error.',
+                    B: 'It is a valid syllogism (Modus Ponens).',
+                    C: 'It commits the fallacy of affirming the consequent.',
+                    D: 'The conclusion does not follow from the premises.',
+                    E: 'It is an argument from analogy.'
+                },
+                correctAnswer: 'B',
+                explanation: 'This argument follows the structure of Modus Ponens (If P, then Q. P. Therefore, Q), which is a valid form of deductive reasoning.'
+            },
+            {
+                id: 'PQ6',
+                questionText: 'Which statement, if true, most weakens the following argument? **"The city should stop funding the central library branch because online resources now provide all necessary information, making physical books obsolete."**',
+                section: 'Logical Reasoning',
+                options: {
+                    A: 'Online resources are more expensive to maintain than physical books.',
+                    B: 'The central library also provides public computer access and job training workshops.',
+                    C: 'Most students prefer using physical textbooks over digital ones.',
+                    D: 'The library building is a historical landmark.',
+                    E: 'The budget for city parks is also being cut this year.'
+                },
+                correctAnswer: 'B',
+                explanation: 'The argument assumes the library\'s *only* function is providing books. Showing the library offers crucial non-book services (computer access, job training) directly attacks and weakens the premise for defunding.'
+            },
+            // PHYSICS & MATHEMATICS
+            {
+                id: 'PQ7',
+                questionText: 'A car accelerates uniformly from rest to $20 \\text{ m/s}$ in $5$ seconds. What is the acceleration?',
+                section: 'Physics & Mathematics',
+                options: {
+                    A: '$4 \\text{ m/s}^2$',
+                    B: '$5 \\text{ m/s}^2$',
+                    C: '$100 \\text{ m/s}^2$',
+                    D: '$0.25 \\text{ m/s}^2$',
+                    E: '$20 \\text{ m/s}^2$'
+                },
+                correctAnswer: 'A',
+                explanation: 'Acceleration (a) is calculated as the change in velocity $(\\Delta v)$ divided by time $(\\Delta t)$. Since it starts from rest, $\\Delta v = 20 \\text{ m/s}$. Thus, $a = 20 \\text{ m/s} / 5 \\text{ s} = 4 \\text{ m/s}^2$.'
+            },
+            {
+                id: 'PQ8',
+                questionText: 'If $3^x = 81$, what is the value of $x$?',
+                section: 'Physics & Mathematics',
+                options: {
+                    A: '2',
+                    B: '3',
+                    C: '4',
+                    D: '27',
+                    E: '81'
+                },
+                correctAnswer: 'C',
+                explanation: 'We need to find the power to which 3 must be raised to equal 81. Since $3 \\times 3 = 9$, $9 \\times 3 = 27$, and $27 \\times 3 = 81$, we have $3^4 = 81$. Therefore, $x=4$.'
+            },
+             // GENERAL KNOWLEDGE
+            {
+                id: 'PQ9',
+                questionText: 'Which international organization is responsible for publishing the annual Human Development Index (HDI)?',
+                section: 'General Knowledge',
+                options: {
+                    A: 'World Health Organization (WHO)',
+                    B: 'United Nations Development Programme (UNDP)',
+                    C: 'International Monetary Fund (IMF)',
+                    D: 'World Bank',
+                    E: 'UNICEF'
+                },
+                correctAnswer: 'B',
+                explanation: 'The **United Nations Development Programme (UNDP)** is the agency responsible for calculating and publishing the Human Development Index (HDI).'
+            },
+            {
+                id: 'PQ10',
+                questionText: 'The concept of "separation of powers" (dividing governmental roles into legislative, executive, and judicial branches) is primarily attributed to which Enlightenment philosopher?',
+                section: 'General Knowledge',
+                options: {
+                    A: 'Jean-Jacques Rousseau',
+                    B: 'Voltaire',
+                    C: 'Immanuel Kant',
+                    D: 'Baron de Montesquieu',
+                    E: 'John Locke'
+                },
+                correctAnswer: 'D',
+                explanation: 'Baron de **Montesquieu**, specifically in his work *The Spirit of the Laws*, detailed the concept of separating government powers to prevent tyranny.'
+            }
+        ];
+
+
+        // --- 2. UTILITIES ---
+
+        function showMessage(message, type = 'success') {
+            const box = document.getElementById('message-box');
+            box.textContent = message;
+            box.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-100 block ${type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+            
+            setTimeout(() => {
+                box.classList.remove('opacity-100');
+                box.classList.add('opacity-0');
+                setTimeout(() => box.classList.add('hidden'), 300);
+            }, 5000);
+        }
+
+        function setLoading(isLoading) {
+            STATE.loading = isLoading;
+            const spinner = document.getElementById('loading-spinner');
+            const loadText = document.getElementById('initial-load-text');
+            
+            // FIX: Safely check for null elements before accessing classList
+            if (spinner && loadText) {
+                if (isLoading) {
+                    spinner.classList.remove('hidden');
+                    loadText.textContent = "Loading...";
+                } else {
+                    spinner.classList.add('hidden');
+                    loadText.textContent = "";
+                }
+            } else {
+                console.log("DOM elements for spinner/load text not yet available.");
+            }
+            
+            renderApp();
+        }
+
+        function calculateScore(mockData) {
+            let correct = 0;
+            let incorrect = 0;
+            let omitted = 0;
+            let totalScore = 0;
+
+            mockData.questions.forEach(q => {
+                const userChoice = mockData.userAnswers[q.id];
+                if (!userChoice) {
+                    omitted++;
+                } else if (userChoice === q.correctAnswer) {
+                    correct++;
+                    totalScore += 1.5;
+                } else {
+                    incorrect++;
+                    totalScore -= 0.4;
+                }
+            });
+
+            return { correct, incorrect, omitted, totalScore: totalScore.toFixed(2) };
+        }
+
+        // --- 3. FIREBASE & DATA MANAGEMENT ---
+
+        async function initFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase config is missing. Data persistence will not work.");
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate user
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Listen for auth state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        document.getElementById('auth-status').textContent = `Status: Logged In`;
+                        document.getElementById('footer-user-id').textContent = userId;
+                        startDataListeners();
+                    } else {
+                        // This should ideally not happen if signInWithCustomToken or signInAnonymously succeeds
+                        document.getElementById('auth-status').textContent = `Status: Guest`;
+                        document.getElementById('footer-user-id').textContent = 'N/A';
+                        isAuthReady = true;
+                        setLoading(false);
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                document.getElementById('auth-status').textContent = `Status: Error (${error.code})`;
+                isAuthReady = true;
+                setLoading(false);
+                showMessage("Database error. Your progress might not be saved.", 'error');
+            }
+        }
+        
+        function getPrivateDocRef(docName) {
+            if (!userId || !db) return null;
+            // FIX: Document references must have an even number of segments (Collection/Document/C/D/C/D).
+            // We insert a 'settings' collection name to achieve the 6-segment path required by security rules.
+            // Path: /artifacts/{appId}/users/{userId}/settings/{docName}
+            return doc(db, 'artifacts', appId, 'users', userId, 'settings', docName);
+        }
+
+        function startDataListeners() {
+            if (!isAuthReady || !userId) return;
+
+            // Listen for User Data (Exam Date, Study Plan)
+            const userDocRef = getPrivateDocRef('imat_user_data');
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    STATE.userData.examDate = data.examDate || EXAM_DEFAULT_DATE.toISOString().split('T')[0];
+                    STATE.userData.studyPlan = data.studyPlan || [];
+                }
+                setLoading(false);
+                renderApp();
+            }, (error) => {
+                console.error("Error listening to user data:", error);
+                showMessage("Could not load user data.", 'error');
+                setLoading(false);
+                renderApp();
+            });
+
+            // Listen for Mock Scores
+            const scoresCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'mock_scores');
+            onSnapshot(scoresCollectionRef, (snapshot) => {
+                STATE.userData.mockScores = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })).sort((a, b) => b.timestamp - a.timestamp); // Newest first
+                renderApp();
+            }, (error) => {
+                console.error("Error listening to mock scores:", error);
+                showMessage("Could not load mock scores.", 'error');
+                renderApp();
+            });
+        }
+
+        async function saveUserData() {
+            if (!isAuthReady || !userId) {
+                showMessage("Auth not ready. Cannot save data.", 'error');
+                return;
+            }
+            try {
+                const userDocRef = getPrivateDocRef('imat_user_data');
+                await setDoc(userDocRef, {
+                    examDate: STATE.userData.examDate,
+                    studyPlan: STATE.userData.studyPlan,
+                    lastUpdated: serverTimestamp()
+                }, { merge: true });
+                showMessage("Study plan and exam date saved!");
+            } catch (error) {
+                console.error("Error saving user data:", error);
+                showMessage("Failed to save data.", 'error');
+            }
+        }
+
+        async function saveMockScore(scoreData) {
+            if (!isAuthReady || !userId) {
+                showMessage("Auth not ready. Cannot save mock score.", 'error');
+                return;
+            }
+            try {
+                const scoresCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'mock_scores');
+                await addDoc(scoresCollectionRef, {
+                    ...scoreData,
+                    timestamp: serverTimestamp()
+                });
+                showMessage("Mock score saved successfully!");
+            } catch (error) {
+                console.error("Error saving mock score:", error);
+                showMessage("Failed to save mock score.", 'error');
+            }
+        }
+
+
+        // --- 4. GEMINI API INTERACTION ---
+        
+        /**
+         * Retries the API call with exponential backoff.
+         * @param {function} fn - The function to call (which returns a promise).
+         * @param {number} retriesLeft - The number of retries remaining.
+         * @param {number} delay - The current delay in milliseconds.
+         */
+        async function exponentialBackoffFetch(fn, retriesLeft = 5, delay = 1000) {
+            try {
+                return await fn();
+            } catch (error) {
+                if (retriesLeft > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return exponentialBackoffFetch(fn, retriesLeft - 1, delay * 2);
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        async function generateIMATQuestions(query) {
+            const systemPrompt = "You are a highly specialized exam question generator for the International Medical Admissions Test (IMAT). Your task is to generate challenging, multiple-choice questions (5 options: A-E) strictly based on the IMAT syllabus topics (Biology, Chemistry, Physics, Mathematics, Logical Reasoning, General Knowledge). Ensure the correct answer is unambiguously one of the options. Output must be a JSON array.";
+            
+            const responseSchema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        "id": { "type": "STRING", "description": "A unique identifier for the question (e.g., Q1)." },
+                        "questionText": { "type": "STRING", "description": "The main question text." },
+                        "section": { "type": "STRING", "enum": ["Biology", "Chemistry", "Physics & Mathematics", "Logical Reasoning", "General Knowledge"] },
+                        "options": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "A": { "type": "STRING" },
+                                "B": { "type": "STRING" },
+                                "C": { "type": "STRING" },
+                                "D": { "type": "STRING" },
+                                "E": { "type": "STRING" }
+                            }
+                        },
+                        "correctAnswer": { "type": "STRING", "enum": ["A", "B", "C", "D", "E"], "description": "The letter corresponding to the correct option." },
+                        "explanation": { "type": "STRING", "description": "A detailed explanation for why the chosen option is correct and why others are incorrect." }
+                    },
+                    required: ["id", "questionText", "section", "options", "correctAnswer", "explanation"]
+                }
+            };
+
+            const payload = {
+                contents: [{ parts: [{ text: query }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema
+                },
+            };
+
+            const fetchFn = async () => {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                return response.json();
+            };
+
+            try {
+                setLoading(true);
+                const result = await exponentialBackoffFetch(fetchFn);
+                setLoading(false);
+                
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) throw new Error("API returned no content.");
+                
+                const questions = JSON.parse(jsonText);
+                return questions.map((q, index) => ({...q, id: `Q${Date.now() + index}`})); // Ensure unique IDs
+            } catch (error) {
+                setLoading(false);
+                console.error("Error during question generation:", error);
+                showMessage("Failed to generate questions. Please try again.", 'error');
+                return [];
+            }
+        }
+        
+        async function startFullMockExam() {
+            if (STATE.loading) return;
+
+            // Generate a query for 60 questions based on IMAT breakdown
+            const sectionQueries = IMAT_SECTIONS.map(s => `${s.count} questions on ${s.name}`).join(', ');
+            const query = `Generate a full 60-question IMAT mock exam. Provide the following breakdown: ${sectionQueries}.`;
+
+            showMessage("Generating 60 custom IMAT questions. This may take up to a minute...", 'success');
+            const questions = await generateIMATQuestions(query);
+
+            if (questions.length === 0) return;
+
+            STATE.currentMock = {
+                questions: questions,
+                userAnswers: {},
+                startTime: Date.now(),
+                // Full mock is timed for 100 minutes
+                timeLeft: 100 * 60, 
+                isFinished: false,
+                type: 'mock'
+            };
+
+            STATE.currentPage = 'mock_exam';
+            renderApp();
+            startMockTimer();
+        }
+
+        async function startQuiz(quizQuestions) {
+             if (STATE.loading) return;
+             
+             STATE.currentMock = {
+                questions: quizQuestions,
+                userAnswers: {},
+                startTime: Date.now(),
+                // Quizzes are untimed (set a very long duration)
+                timeLeft: 9999 * 60, 
+                isFinished: false,
+                type: 'quiz'
+            };
+            
+            STATE.currentPage = 'mock_exam';
+            renderApp();
+            // No timer started for quizzes
+        }
+
+        // New function to start a dynamically generated AI quiz
+        async function startAiQuiz(section, count) {
+            count = parseInt(count);
+            if (STATE.loading || count < 1) return;
+
+            const query = `Generate ${count} challenging, unique multiple-choice questions for the IMAT section: ${section}.`;
+
+            showMessage(`Generating ${count} custom questions for ${section}. Please wait...`, 'success');
+            const questions = await generateIMATQuestions(query);
+
+            if (questions.length === 0) return;
+
+            STATE.currentMock = {
+                questions: questions,
+                userAnswers: {},
+                startTime: Date.now(),
+                timeLeft: 9999 * 60, // Untimed
+                isFinished: false,
+                type: 'quiz' 
+            };
+
+            STATE.currentPage = 'mock_exam';
+            renderApp();
+        }
+
+        // --- 5. STUDY PLAN LOGIC ---
+
+        function generatePlan() {
+            const examDateStr = STATE.userData.examDate;
+            const today = new Date();
+            const examDate = new Date(examDateStr);
+            
+            const diffTime = examDate - today;
+            if (diffTime <= 0) {
+                showMessage("The exam date has passed or is today. Please set a future date.", 'error');
+                STATE.userData.studyPlan = [{ task: "The exam is today or has passed! Time for revision!", days: 0, section: "ALL" }];
+                return;
+            }
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const totalWeight = IMAT_SECTIONS.reduce((sum, s) => sum + s.weight, 0);
+
+            let studyPlan = [];
+            let remainingDays = diffDays;
+            let daysUsed = 0;
+
+            // Phase 1: Foundation (30% of time)
+            let phase1Days = Math.floor(diffDays * 0.3);
+            if (phase1Days > 0) {
+                studyPlan.push({ days: phase1Days, task: "Phase 1: Foundation & Diagnostics", section: "ALL" });
+                daysUsed += phase1Days;
+                
+                IMAT_SECTIONS.forEach(s => {
+                    const days = Math.max(1, Math.round(phase1Days * (s.weight / totalWeight)));
+                    studyPlan.push({ days: days, task: `Core concepts for ${s.name} (${days} days total)`, section: s.name });
+                });
+            }
+
+            // Phase 2: Comprehensive Review (50% of time)
+            let phase2Days = Math.floor(diffDays * 0.5);
+            if (phase2Days > 0) {
+                studyPlan.push({ days: phase2Days, task: "Phase 2: Deep Review & Practice", section: "ALL" });
+                daysUsed += phase2Days;
+
+                IMAT_SECTIONS.forEach(s => {
+                    const days = Math.max(1, Math.round(phase2Days * (s.weight / totalWeight)));
+                    studyPlan.push({ days: days, task: `Advanced topics & Quizzes for ${s.name} (${days} days total)`, section: s.name });
+                });
+            }
+
+            // Phase 3: Mock Exams & Final Revision (Remaining days)
+            let phase3Days = diffDays - daysUsed;
+            if (phase3Days > 0) {
+                studyPlan.push({ days: phase3Days, task: "Phase 3: Full Mocks & Weak Spot Blitz", section: "ALL" });
+                studyPlan.push({ days: Math.floor(phase3Days / 2), task: `Full Mock Exams (Timed) & Review`, section: "ALL" });
+                studyPlan.push({ days: Math.ceil(phase3Days / 2), task: `Intensive review of weakest topics`, section: "ALL" });
+            }
+
+            STATE.userData.studyPlan = studyPlan.filter(p => p.days > 0);
+            saveUserData();
+            showMessage("Study plan generated based on your exam date!");
+            renderApp();
+        }
+
+
+        // --- 6. MOCK EXAM TIMER LOGIC ---
+
+        let mockTimerInterval = null;
+
+        function startMockTimer() {
+            if (mockTimerInterval) clearInterval(mockTimerInterval);
+            if (STATE.currentMock.type !== 'mock') return; // Only start timer for full mocks
+
+            mockTimerInterval = setInterval(() => {
+                if (!STATE.currentMock || STATE.currentMock.isFinished) {
+                    clearInterval(mockTimerInterval);
+                    mockTimerInterval = null;
+                    return;
+                }
+
+                STATE.currentMock.timeLeft--;
+
+                if (STATE.currentMock.timeLeft <= 0) {
+                    clearInterval(mockTimerInterval);
+                    finishMockExam();
+                    showMessage("Time's up! The mock exam has automatically submitted.", 'error');
+                }
+                
+                // Only re-render the timer display
+                const timerEl = document.getElementById('mock-timer-display');
+                if (timerEl) {
+                    const minutes = Math.floor(STATE.currentMock.timeLeft / 60);
+                    const seconds = STATE.currentMock.timeLeft % 60;
+                    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function finishMockExam() {
+            if (!STATE.currentMock) return;
+            STATE.currentMock.isFinished = true;
+            if (STATE.currentMock.type === 'mock') {
+                clearInterval(mockTimerInterval);
+                mockTimerInterval = null;
+            }
+
+            const score = calculateScore(STATE.currentMock);
+            STATE.currentMock.score = score;
+            
+            // Save mock scores (quizzes are not saved to mock history)
+            if (STATE.currentMock.type === 'mock') {
+                saveMockScore({
+                    questionsCount: STATE.currentMock.questions.length,
+                    correct: score.correct,
+                    incorrect: score.incorrect,
+                    omitted: score.omitted,
+                    totalScore: parseFloat(score.totalScore),
+                    durationMinutes: Math.floor((Date.now() - STATE.currentMock.startTime) / 60000)
+                });
+            }
+
+
+            // Switch to result view
+            STATE.currentPage = 'mock_results';
+            renderApp();
+        }
+
+        // --- 7. RENDERING LOGIC ---
+
+        function navigate(page) {
+            STATE.currentPage = page;
+            renderApp();
+        }
+
+        function renderNavbar() {
+            const container = document.getElementById('nav-container');
+            const links = [
+                { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+                { id: 'mock_setup', label: 'Practice', icon: 'pencil' },
+                { id: 'study_plan', label: 'Study Planner', icon: 'calendar-check' }
+            ];
+
+            container.innerHTML = links.map(link => `
+                <a href="#" onclick="window.navigate('${link.id}')"
+                   class="nav-link flex items-center space-x-1 py-2 px-3 transition duration-150 ease-in-out text-gray-600 hover:text-indigo-600 ${STATE.currentPage.startsWith(link.id.split('_')[0]) ? 'active' : ''}">
+                   <i data-lucide="${link.icon}" class="h-5 w-5"></i>
+                   <span class="hidden sm:inline">${link.label}</span>
+                </a>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderApp() {
+            renderNavbar();
+            const view = document.getElementById('app-view');
+
+            if (STATE.loading && !isAuthReady) {
+                view.innerHTML = `
+                    <div class="flex flex-col justify-center items-center h-96">
+                        <div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
+                        <p class="text-lg text-gray-600">Initializing Firebase and logging you in...</p>
+                        <p class="text-sm text-gray-400 mt-2">Your progress will be saved automatically.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            switch (STATE.currentPage) {
+                case 'dashboard':
+                    view.innerHTML = renderDashboard();
+                    break;
+                case 'mock_setup':
+                    view.innerHTML = renderMockSetup();
+                    break;
+                case 'mock_exam':
+                    view.innerHTML = renderMockExam();
+                    break;
+                case 'mock_results':
+                    view.innerHTML = renderMockResults();
+                    break;
+                case 'study_plan':
+                    view.innerHTML = renderStudyPlan();
+                    break;
+                default:
+                    view.innerHTML = renderDashboard();
+            }
+            lucide.createIcons();
+        }
+
+        // --- View Rendering Functions ---
+
+        function renderDashboard() {
+            const today = new Date();
+            const examDate = new Date(STATE.userData.examDate);
+            const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+            
+            const latestScore = STATE.userData.mockScores[0];
+            const hasScore = latestScore && latestScore.totalScore !== undefined;
+
+            return `
+                <div class="space-y-8">
+                    <div class="bg-indigo-600 text-white p-6 sm:p-10 rounded-xl shadow-lg">
+                        <h2 class="text-4xl font-extrabold mb-2">Welcome to IMAT Prep Forge!</h2>
+                        <p class="text-indigo-200">Your custom training ground for the International Medical Admissions Test.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <!-- Days Left Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-primary">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Days to Exam</h3>
+                                <i data-lucide="calendar" class="text-primary h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${daysLeft > 0 ? daysLeft : '0'}</p>
+                            <p class="text-sm text-gray-500 mt-1">Target Date: ${STATE.userData.examDate}</p>
+                            <button onclick="window.navigate('study_plan')" class="text-primary hover:text-indigo-700 text-sm font-medium mt-3">
+                                <i data-lucide="arrow-right" class="inline h-4 w-4"></i> View/Update Plan
+                            </button>
+                        </div>
+                        
+                        <!-- Latest Score Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-600">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Latest Mock Score</h3>
+                                <i data-lucide="award" class="text-green-600 h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${hasScore ? latestScore.totalScore : 'N/A'}</p>
+                            <p class="text-sm text-gray-500 mt-1">${hasScore ? `Correct: ${latestScore.correct}, Incorrect: ${latestScore.incorrect}` : 'No mocks completed yet.'}</p>
+                            <button onclick="window.navigate('mock_setup')" class="text-green-600 hover:text-green-700 text-sm font-medium mt-3">
+                                <i data-lucide="plus-circle" class="inline h-4 w-4"></i> Start Practice
+                            </button>
+                        </div>
+                        
+                        <!-- Total Mocks Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Mocks Completed</h3>
+                                <i data-lucide="list-checks" class="text-yellow-500 h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${STATE.userData.mockScores.length}</p>
+                            <p class="text-sm text-gray-500 mt-1">Practice makes perfect!</p>
+                            <button onclick="document.getElementById('mock-history').scrollIntoView({behavior: 'smooth'})" class="text-yellow-500 hover:text-yellow-700 text-sm font-medium mt-3">
+                                <i data-lucide="history" class="inline h-4 w-4"></i> View History
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mock History Section -->
+                    <div id="mock-history" class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i data-lucide="bar-chart-3" class="h-6 w-6 mr-2 text-indigo-600"></i> Mock Exam History
+                        </h3>
+                        ${STATE.userData.mockScores.length > 0 ? `
+                            <ul class="divide-y divide-gray-200">
+                                ${STATE.userData.mockScores.map(score => `
+                                    <li class="py-3 flex justify-between items-center">
+                                        <div>
+                                            <p class="font-medium text-gray-900">Score: <span class="text-green-600">${score.totalScore}</span> / 90.0</p>
+                                            <p class="text-sm text-gray-500">Completed: ${new Date(score.timestamp.toDate()).toLocaleString()}</p>
+                                        </div>
+                                        <div class="text-sm text-right">
+                                            <p class="text-green-500">Correct: ${score.correct}</p>
+                                            <p class="text-red-500">Incorrect: ${score.incorrect}</p>
+                                            <p class="text-yellow-500">Omitted: ${score.omitted}</p>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : `
+                            <p class="text-gray-500 italic">Complete your first full mock exam to see your history here.</p>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMockSetup() {
+            const sectionsWithPreGen = IMAT_SECTIONS.filter(s => PRE_GENERATED_QUIZ_QUESTIONS.some(q => q.section === s.name));
+            
+            const preGeneratedQuizzes = sectionsWithPreGen.map(section => {
+                const quizData = PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === section.name);
+                if (quizData.length > 0) {
+                    return `
+                        <div class="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-gray-800">${section.name} Quiz</h4>
+                            <p class="text-gray-600 text-sm mb-3">Quick revision quiz (${quizData.length} questions).</p>
+                            <button onclick="window.startQuiz(window.PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === '${section.name}'))" 
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center">
+                                <i data-lucide="zap" class="h-4 w-4 mr-1"></i> Start Instant Quiz
+                            </button>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-4">Practice Modes</h2>
+                    
+                    <!-- 1. Full AI Mock Exam -->
+                    <div class="space-y-4 p-5 bg-indigo-50 rounded-xl border-l-4 border-indigo-500">
+                        <h3 class="text-2xl font-bold text-indigo-800">Full Simulated Mock Exam (AI Generated)</h3>
+                        <p class="text-lg text-indigo-700">
+                            Generate a new, full IMAT mock exam (60 questions, 100 minutes) based on the official syllabus structure. 
+                        </p>
+                        <div class="flex items-center p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
+                            <i data-lucide="alert-triangle" class="text-yellow-500 h-6 w-6 mr-3"></i>
+                            <p class="text-sm text-yellow-800">
+                                **Note:** Generating 60 questions can take 30-60 seconds due to AI processing.
+                            </p>
+                        </div>
+
+                        <div class="flex justify-center pt-2">
+                            <button onclick="window.startFullMockExam()" 
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200 ease-in-out shadow-lg transform hover:scale-105 disabled:opacity-50 flex items-center"
+                                id="start-mock-button"
+                                ${STATE.loading ? 'disabled' : ''}>
+                                <i data-lucide="play" class="h-6 w-6 mr-2"></i>
+                                ${STATE.loading ? 'Generating...' : 'Start Full 100-Minute Mock'}
+                            </button>
+                        </div>
+                        
+                        <div id="loading-message" class="text-center text-indigo-600 font-medium mt-4 ${STATE.loading ? 'block' : 'hidden'}">
+                            <div class="animate-pulse">The AI is crafting your 60 unique IMAT questions now...</div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Dynamic AI Quizzes -->
+                    <div class="space-y-4 p-5 bg-green-50 rounded-xl border-l-4 border-green-500">
+                        <h3 class="text-2xl font-bold text-green-800">Dynamic AI Quick Quizzes (Generate 1000s)</h3>
+                        <p class="text-lg text-green-700">
+                            Instantly generate a custom number of unique, untimed questions for any section. This provides unlimited practice.
+                        </p>
+                        <div class="grid sm:grid-cols-3 gap-3 items-end">
+                            <div class="col-span-1">
+                                <label for="quiz-section" class="block text-sm font-medium text-gray-700">Select Section</label>
+                                <select id="quiz-section" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                                    ${IMAT_SECTIONS.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="col-span-1">
+                                <label for="quiz-count" class="block text-sm font-medium text-gray-700">Number of Questions (Max 30)</label>
+                                <input type="number" id="quiz-count" value="10" min="5" max="30" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <div class="col-span-1">
+                                <button onclick="window.startAiQuiz(document.getElementById('quiz-section').value, document.getElementById('quiz-count').value)"
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center justify-center"
+                                    ${STATE.loading ? 'disabled' : ''}>
+                                    <i data-lucide="plus-square" class="h-5 w-5 mr-2"></i> Start Custom Quiz
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Quick Quizzes -->
+                    <div class="space-y-4 pt-4">
+                        <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">Quick Revision Quizzes (Pre-Generated)</h3>
+                        <p class="text-gray-600">
+                            Jump straight into topic-specific practice with guaranteed instant-load questions and answers.
+                        </p>
+                        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            ${preGeneratedQuizzes}
+                            
+                            <!-- Placeholder for future quizzes -->
+                            ${IMAT_SECTIONS.filter(s => !sectionsWithPreGen.includes(s)).map(s => `
+                                <div class="p-5 bg-gray-100 rounded-xl shadow-md border border-gray-200 flex flex-col justify-center items-center text-center">
+                                    <i data-lucide="file-text" class="h-6 w-6 text-gray-500 mb-2"></i>
+                                    <p class="text-gray-500 font-medium">${s.name} Quiz (Coming Soon!)</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMockExam() {
+            if (!STATE.currentMock) {
+                return `<div class="text-center p-8"><p class="text-xl text-gray-500">Practice not started. Please go to the Practice page to begin.</p><button onclick="window.navigate('mock_setup')" class="mt-4 bg-indigo-500 text-white p-2 rounded-lg">Go to Practice Setup</button></div>`;
+            }
+
+            const { questions, userAnswers, timeLeft, isFinished, type } = STATE.currentMock;
+            
+            let minutes = 0;
+            let seconds = 0;
+            if (type === 'mock') {
+                minutes = Math.floor(timeLeft / 60);
+                seconds = timeLeft % 60;
+            }
+
+            const currentQuestionIndex = parseInt(document.querySelector('input[name="question-nav"]:checked')?.value || '0');
+            const currentQuestion = questions[currentQuestionIndex];
+            
+            const questionSections = questions.map(q => q.section);
+            const sectionStartIndices = {};
+            let lastSection = null;
+            questions.forEach((q, index) => {
+                if (q.section !== lastSection) {
+                    sectionStartIndices[index] = q.section;
+                    lastSection = q.section;
+                }
+            });
+
+
+            return `
+                <div class="grid lg:grid-cols-4 gap-6">
+                    <!-- Left Sidebar (Navigation & Timer) -->
+                    <div class="lg:col-span-1 bg-white p-4 rounded-xl shadow-lg sticky top-20 h-fit">
+                        ${type === 'mock' ? `
+                            <div class="text-center p-3 border-b mb-4">
+                                <p class="text-xl font-semibold text-gray-700">Time Remaining</p>
+                                <p id="mock-timer-display" class="text-4xl font-extrabold ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-green-600'}">
+                                    ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+                                </p>
+                            </div>
+                        ` : `
+                             <div class="text-center p-3 border-b mb-4">
+                                <p class="text-xl font-semibold text-gray-700">Quiz Mode</p>
+                                <p class="text-3xl font-extrabold text-blue-600">UNTIED PRACTICE</p>
+                            </div>
+                        `}
+
+                        <div class="max-h-[70vh] overflow-y-auto">
+                            <h4 class="font-bold mb-3 text-gray-800">Question Navigation (${questions.length})</h4>
+                            <div class="grid grid-cols-5 sm:grid-cols-6 gap-2">
+                                ${questions.map((q, index) => {
+                                    const answer = userAnswers[q.id];
+                                    let color = 'bg-gray-200 text-gray-700';
+                                    if (answer) color = 'bg-indigo-600 text-white shadow-md';
+
+                                    let sectionLabel = sectionStartIndices[index] ? `<span class="block text-xs font-semibold text-gray-500 pt-2">${sectionStartIndices[index]}</span>` : '';
+
+                                    return `
+                                        ${sectionLabel}
+                                        <label>
+                                            <input type="radio" name="question-nav" value="${index}" class="hidden" 
+                                                ${index === currentQuestionIndex ? 'checked' : ''}
+                                                onchange="window.handleQuestionChange(event)"
+                                            >
+                                            <div class="w-full text-center p-2 rounded-lg cursor-pointer ${color} hover:shadow-lg transition duration-150 border-2 ${index === currentQuestionIndex ? 'border-indigo-600 ring-2 ring-indigo-300' : 'border-transparent'}">
+                                                ${index + 1}
+                                            </div>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Content (Question Area) -->
+                    <div class="lg:col-span-3 space-y-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg question-card">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h3 class="text-2xl font-bold text-gray-800">Question ${currentQuestionIndex + 1} / ${questions.length}</h3>
+                                <span class="text-md font-medium text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">${currentQuestion.section}</span>
+                            </div>
+
+                            <p class="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-6">${currentQuestion.questionText}</p>
+
+                            <div id="options-container" class="space-y-3">
+                                ${Object.entries(currentQuestion.options).map(([key, value]) => `
+                                    <label class="flex items-start p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50 transition duration-150 border-2 ${userAnswers[currentQuestion.id] === key ? 'border-indigo-600 bg-indigo-100/50' : 'border-gray-200'}">
+                                        <input type="radio" name="answer" value="${key}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500"
+                                            ${userAnswers[currentQuestion.id] === key ? 'checked' : ''}
+                                            onchange="window.handleAnswerChange('${currentQuestion.id}', event.target.value)"
+                                        >
+                                        <span class="ml-3 text-gray-700 font-medium">${key}.</span>
+                                        <span class="ml-2 text-gray-600 whitespace-pre-wrap">${value}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
+                            <button onclick="window.prevQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''}
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center">
+                                <i data-lucide="chevron-left" class="h-5 w-5 mr-1"></i> Previous
+                            </button>
+                            
+                            <button onclick="window.finishMockExam()"
+                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200 shadow-md transform hover:scale-105">
+                                <i data-lucide="flag" class="h-5 w-5 mr-1"></i> ${type === 'mock' ? 'Submit Exam' : 'Finish Quiz & Review'}
+                            </button>
+
+                            <button onclick="window.nextQuestion()" ${currentQuestionIndex === questions.length - 1 ? 'disabled' : ''}
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center">
+                                Next <i data-lucide="chevron-right" class="h-5 w-5 ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderMockResults() {
+            if (!STATE.currentMock || !STATE.currentMock.score) {
+                return `<div class="text-center p-8"><p class="text-xl text-gray-500">No practice results found.</p><button onclick="window.navigate('mock_setup')" class="mt-4 bg-indigo-500 text-white p-2 rounded-lg">Start New Practice</button></div>`;
+            }
+
+            const score = STATE.currentMock.score;
+            const questions = STATE.currentMock.questions;
+            const isMock = STATE.currentMock.type === 'mock';
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-8">
+                    <div class="text-center ${isMock ? 'bg-green-100 border-t-8 border-green-500' : 'bg-blue-100 border-t-8 border-blue-500'} p-8 rounded-xl shadow-xl ">
+                        <i data-lucide="trophy" class="h-12 w-12 ${isMock ? 'text-green-600' : 'text-blue-600'} mx-auto mb-3"></i>
+                        <h2 class="text-4xl font-extrabold text-gray-800">${isMock ? 'Mock Exam Results' : 'Quiz Review'}</h2>
+                        <p class="text-6xl font-black ${isMock ? 'text-green-600' : 'text-blue-600'} mt-4">${score.totalScore}</p>
+                        <p class="text-xl text-gray-600">Total Score (Max ${isMock ? '90.0' : `${(questions.length * 1.5).toFixed(1)}`})</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <p class="text-3xl font-bold text-green-600">${score.correct}</p>
+                            <p class="text-sm text-gray-500">Correct Answers</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <p class="text-3xl font-bold text-red-600">${score.incorrect}</p>
+                            <p class="text-sm text-gray-500">Incorrect Answers</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <p class="text-3xl font-bold text-yellow-600">${score.omitted}</p>
+                            <p class="text-sm text-gray-500">Omitted Answers</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Review Questions and Explanations</h3>
+                        <div class="space-y-6">
+                            ${questions.map((q, index) => {
+                                const userAnswer = STATE.currentMock.userAnswers[q.id];
+                                const isCorrect = userAnswer === q.correctAnswer;
+                                const borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+
+                                return `
+                                    <div class="p-4 rounded-xl shadow-md border-l-4 ${borderColor} bg-gray-50">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <p class="font-bold text-lg text-gray-800">Q${index + 1}: ${q.section}</p>
+                                            <span class="px-3 py-1 text-sm font-semibold rounded-full ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                                                ${isCorrect ? 'Correct' : 'Incorrect'}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-700 whitespace-pre-wrap mb-3">${q.questionText}</p>
+                                        
+                                        <ul class="space-y-1 text-sm">
+                                            ${Object.entries(q.options).map(([key, value]) => {
+                                                let style = 'text-gray-600';
+                                                if (key === q.correctAnswer) {
+                                                    style = 'font-bold text-green-600 bg-green-50 p-1 rounded';
+                                                } else if (key === userAnswer && !isCorrect) {
+                                                    style = 'font-bold text-red-600 bg-red-50 p-1 rounded line-through';
+                                                }
+                                                return `<li class="${style}">${key}. ${value}</li>`;
+                                            }).join('')}
+                                        </ul>
+
+                                        <div class="mt-4 p-3 ${isMock ? 'bg-indigo-50' : 'bg-blue-50'} rounded-lg">
+                                            <p class="font-semibold ${isMock ? 'text-indigo-700' : 'text-blue-700'}">Explanation:</p>
+                                            <p class="text-sm ${isMock ? 'text-indigo-600' : 'text-blue-600'} whitespace-pre-wrap">${q.explanation}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="text-center pt-4">
+                        <button onclick="window.navigate('dashboard')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg">
+                            Return to Dashboard
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStudyPlan() {
+            const today = new Date();
+            const examDate = new Date(STATE.userData.examDate);
+            const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+            
+            const totalWeight = IMAT_SECTIONS.reduce((sum, s) => sum + s.weight, 0);
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-4">IMAT Study Planner</h2>
+
+                    <!-- Exam Date Setter -->
+                    <div class="p-5 bg-indigo-50 rounded-xl border border-indigo-200">
+                        <label for="exam-date" class="block text-lg font-medium text-indigo-800 mb-2">
+                            Set Your IMAT Exam Date:
+                        </label>
+                        <input type="date" id="exam-date" value="${STATE.userData.examDate}"
+                            onchange="window.handleDateChange(event)"
+                            class="p-2 border border-indigo-300 rounded-lg w-full sm:w-1/2 focus:ring-indigo-500 focus:border-indigo-500">
+                        
+                        <div class="mt-4 text-gray-700">
+                            <p class="font-semibold">Days Remaining: <span class="text-indigo-600 text-xl">${daysLeft > 0 ? daysLeft : '0'}</span></p>
+                        </div>
+
+                        <button onclick="window.generatePlan()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-md disabled:opacity-50" ${STATE.loading ? 'disabled' : ''}>
+                            <i data-lucide="refresh-cw" class="inline h-4 w-4 mr-1"></i> Generate/Update Plan
+                        </button>
+                    </div>
+                    
+                    <!-- Study Plan Details -->
+                    <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Recommended Study Schedule</h3>
+                    
+                    ${STATE.userData.studyPlan.length > 0 ? `
+                        <div class="space-y-4">
+                            ${STATE.userData.studyPlan.map(item => {
+                                let color = 'bg-gray-100 border-gray-300 text-gray-800';
+                                if (item.section === 'ALL') color = 'bg-indigo-100 border-indigo-400 text-indigo-800 font-bold';
+                                if (item.section === 'Biology') color = 'bg-green-100 border-green-400 text-green-800';
+                                if (item.section === 'Chemistry') color = 'bg-yellow-100 border-yellow-400 text-yellow-800';
+                                if (item.section.includes('Physics')) color = 'bg-red-100 border-red-400 text-red-800';
+                                
+                                return `
+                                    <div class="p-4 rounded-lg border-l-8 ${color} shadow-sm flex justify-between items-center">
+                                        <div>
+                                            <p class="text-lg font-semibold">${item.task}</p>
+                                            <p class="text-sm opacity-80">${item.section}</p>
+                                        </div>
+                                        <span class="text-xl font-black">${item.days} ${item.days === 1 ? 'Day' : 'Days'}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <div class="p-6 bg-yellow-50 rounded-lg text-center border-2 border-dashed border-yellow-300">
+                            <p class="text-lg text-yellow-700">Please set your exam date and click "Generate/Update Plan" to see your personalized schedule!</p>
+                        </div>
+                    `}
+                    
+                    <h3 class="text-xl font-bold text-gray-800 pt-4">IMAT Section Weightage (60 Questions)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        ${IMAT_SECTIONS.map(s => `
+                            <div class="p-3 bg-gray-50 rounded-lg text-center border">
+                                <p class="text-2xl font-bold text-indigo-600">${s.count}</p>
+                                <p class="text-sm font-medium text-gray-700">${s.name}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 8. EVENT HANDLERS (EXPOSED TO WINDOW) ---
+
+        window.navigate = navigate;
+        window.startFullMockExam = startFullMockExam;
+        window.startQuiz = startQuiz; // Exposed for quiz buttons
+        window.startAiQuiz = startAiQuiz; // Exposed for dynamic AI quiz
+        window.generatePlan = generatePlan;
+        window.PRE_GENERATED_QUIZ_QUESTIONS = PRE_GENERATED_QUIZ_QUESTIONS; // Expose global quiz data
+
+        window.handleDateChange = (event) => {
+            STATE.userData.examDate = event.target.value;
+            // The plan is generated/saved on explicit button click, but we store the date immediately.
+        };
+
+        window.handleAnswerChange = (questionId, value) => {
+            if (STATE.currentMock && !STATE.currentMock.isFinished) {
+                STATE.currentMock.userAnswers[questionId] = value;
+                renderApp(); // Re-render to update selected option highlight
+            }
+        };
+
+        window.handleQuestionChange = (event) => {
+            // Re-render to show the new question
+            renderApp();
+        };
+
+        window.nextQuestion = () => {
+            const current = parseInt(document.querySelector('input[name="question-nav"]:checked').value);
+            if (current < STATE.currentMock.questions.length - 1) {
+                document.querySelector(`input[name="question-nav"][value="${current + 1}"]`).checked = true;
+                renderApp();
+            }
+        };
+
+        window.prevQuestion = () => {
+            const current = parseInt(document.querySelector('input[name="question-nav"]:checked').value);
+            if (current > 0) {
+                document.querySelector(`input[name="question-nav"][value="${current - 1}"]`).checked = true;
+                renderApp();
+            }
+        };
+
+        window.finishMockExam = finishMockExam;
+
+        // --- 9. BOOTSTRAP ---
+        window.onload = () => {
+            initFirebase();
+            renderApp();
+        };
+
+    </script>
+</body>
+</html>
