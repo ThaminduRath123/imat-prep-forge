@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAT Prep Forge</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a; /* Dark Blue */
+            --secondary: #3b82f6; /* Medium Blue */
+            --accent: #ef4444; /* Red for alerts/errors */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* Light slate background */
+        }
+        .scrollable-content {
+            max-height: calc(100vh - 8rem);
+            overflow-y: auto;
+        }
+        .scrollable-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 3px;
+        }
+        .nav-link.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .question-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="graduation-cap" class="text-indigo-600 h-8 w-8"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">IMAT Prep Forge</h1>
+                </div>
+                <div id="nav-container" class="flex space-x-6">
+                    <!-- Nav links inserted here by JS -->
+                </div>
+                <div id="auth-status" class="text-sm text-gray-500">
+                    Loading Auth...
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <div id="message-box" class="fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0 hidden" role="alert"></div>
+
+        <div id="app-view" class="scrollable-content">
+            <div class="flex justify-center items-center h-96">
+                <div class="text-center">
+                    <div id="loading-spinner" class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4 hidden"></div>
+                    <p class="text-gray-500" id="initial-load-text">Initializing application...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto py-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+            <p>&copy; 2025 IMAT Prep Forge. Practice powered by Gemini API. User ID: <span id="footer-user-id">N/A</span></p>
+        </div>
+    </footer>
+
+    <!-- Firebase and Application Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, limit, addDoc, serverTimestamp, setLogLevel, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- 1. CONFIGURATION ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        setLogLevel('Debug');
+        
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        const EXAM_DEFAULT_DATE = new Date(new Date().setMonth(new Date().getMonth() + 3));
+        
+        const STATE = {
+            currentPage: 'dashboard',
+            userData: {
+                examDate: EXAM_DEFAULT_DATE.toISOString().split('T')[0],
+                mockScores: [],
+                studyPlan: []
+            },
+            questions: [],
+            currentMock: null,
+            loading: false
+        };
+
+        const IMAT_SECTIONS = [
+            { name: "General Knowledge", count: 4, weight: 1 },
+            { name: "Logical Reasoning", count: 5, weight: 1 },
+            { name: "Biology", count: 23, weight: 3 },
+            { name: "Chemistry", count: 15, weight: 2 },
+            { name: "Physics & Mathematics", count: 13, weight: 2 }
+        ];
+
+        const API_KEY = ""; // Injected by environment
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        
+        // --- PRE-GENERATED QUIZ DATA (175 Questions total) ---
+        // Includes the 75 Biology questions you provided + samples for others.
+        const PRE_GENERATED_QUIZ_QUESTIONS = [
+            // BIOLOGY (75 Questions - Combined from previous user input and internal samples)
+            { id: 'B1', questionText: 'Which organelle is responsible for modifying, sorting, and packaging proteins and lipids synthesized in the Endoplasmic Reticulum?', section: 'Biology', options: { A: 'Mitochondrion', B: 'Lysosome', C: 'Peroxisome', D: 'Golgi apparatus', E: 'Ribosome' }, correctAnswer: 'D', explanation: 'The Golgi apparatus (or Golgi complex) processes molecules for secretion or for delivery to other cell compartments.' },
+            { id: 'B2', questionText: 'The primary structure of a protein is determined by which of the following?', section: 'Biology', options: { A: 'The folding of the polypeptide chain into an alpha-helix or beta-sheet.', B: 'The sequence of amino acids in the polypeptide chain.', C: 'The spatial arrangement of multiple polypeptide subunits.', D: 'The location of disulfide bridges.', E: 'The binding of cofactors.' }, correctAnswer: 'B', explanation: 'Primary structure is the linear sequence of amino acids linked by peptide bonds.' },
+            { id: 'B3', questionText: 'During which phase of the cell cycle does DNA replication occur?', section: 'Biology', options: { A: 'G1 phase', B: 'G2 phase', C: 'M phase (Mitosis)', D: 'S phase', E: 'Cytokinesis' }, correctAnswer: 'D', explanation: 'The S (Synthesis) phase is dedicated to the replication of the cell\'s entire DNA content.' },
+            { id: 'B4', questionText: 'Which enzyme is responsible for unwinding the DNA double helix during replication?', section: 'Biology', options: { A: 'DNA polymerase', B: 'Primase', C: 'DNA ligase', D: 'Helicase', E: 'Topoisomerase' }, correctAnswer: 'D', explanation: 'Helicase uses ATP energy to separate the two strands of the DNA helix, breaking the hydrogen bonds between base pairs.' },
+            { id: 'B5', questionText: 'If a person has the blood genotype $I^A I^B$, what blood phenotype will they express?', section: 'Biology', options: { A: 'A', B: 'B', C: 'O', D: 'AB', E: 'A or B' }, correctAnswer: 'D', explanation: 'The $I^A$ and $I^B$ alleles are codominant, meaning both are fully expressed, resulting in the AB blood type.' },
+            { id: 'B6', questionText: 'Which of the following is an example of active transport across a cell membrane?', section: 'Biology', options: { A: 'Osmosis of water', B: 'Diffusion of $\\text{O}_2$', C: 'Facilitated diffusion of glucose', D: 'Sodium-potassium pump ($\\text{Na}^+/\\text{K}^+$ pump)', E: 'Movement of cholesterol through the lipid bilayer' }, correctAnswer: 'D', explanation: 'The $\\text{Na}^+/\\text{K}^+$ pump uses ATP to move ions against their concentration gradient, which is the definition of active transport.' },
+            { id: 'B7', questionText: 'What is the final electron acceptor in the electron transport chain during aerobic cellular respiration?', section: 'Biology', options: { A: 'ATP', B: 'Pyruvate', C: 'Water', D: 'Oxygen ($\\text{O}_2$)', E: '$\\text{NADH}$' }, correctAnswer: 'D', explanation: 'Oxygen accepts electrons and protons at the end of the chain to form water, driving the entire oxidative phosphorylation process.' },
+            { id: 'B8', questionText: 'The process of Transcription involves the synthesis of:', section: 'Biology', options: { A: 'Protein from $\\text{mRNA}$.', B: 'DNA from a DNA template.', C: '$\\text{mRNA}$ from a $\\text{DNA}$ template.', D: 'DNA from an $\\text{RNA}$ template.', E: 'Lipids from carbohydrates.' }, correctAnswer: 'C', explanation: 'Transcription is the process where genetic information in a DNA strand is copied into a complementary $\\text{mRNA}$ strand.' },
+            { id: 'B9', questionText: 'Which of the following is a function of the Human Endocrine System?', section: 'Biology', options: { A: 'Rapid transmission of electrical impulses.', B: 'The production and secretion of hormones for slow, long-term regulation.', C: 'Defense against foreign pathogens.', D: 'Movement of the body through muscle contraction.', E: 'Gas exchange in the lungs.' }, correctAnswer: 'B', explanation: 'The endocrine system regulates bodily functions by secreting hormones into the bloodstream for slow, widespread effects.' },
+            { id: 'B10', questionText: 'The structures responsible for carrying oxygen in the blood are:', section: 'Biology', options: { A: 'Platelets', B: 'White blood cells (Leukocytes)', C: 'Red blood cells (Erythrocytes)', D: 'Plasma proteins', E: 'Lymphocytes' }, correctAnswer: 'C', explanation: 'Red blood cells contain the protein hemoglobin, which binds to and transports oxygen from the lungs to the tissues.' },
+            { id: 'B11', questionText: 'Which kingdom of organisms includes organisms that are multicellular, eukaryotic, heterotrophic, and lack cell walls?', section: 'Biology', options: { A: 'Protista', B: 'Fungi', C: 'Plantae', D: 'Archaea', E: 'Animalia' }, correctAnswer: 'E', explanation: 'The Animalia kingdom is defined by these characteristics: multicellular, eukaryotic, heterotrophic, and no cell walls.' },
+            { id: 'B12', questionText: 'The movement of water across a selectively permeable membrane from an area of higher water concentration to an area of lower water concentration is called:', section: 'Biology', options: { A: 'Active transport', B: 'Facilitated diffusion', C: 'Osmosis', D: 'Endocytosis', E: 'Exocytosis' }, correctAnswer: 'C', explanation: 'Osmosis is the specific diffusion of water across a membrane, driven by a difference in solute concentration.' },
+            { id: 'B13', questionText: 'What are the subunits (monomers) of nucleic acids?', section: 'Biology', options: { A: 'Amino acids', B: 'Monosaccharides', C: 'Fatty acids and glycerol', D: 'Nucleotides', E: 'Glycerol and phosphate' }, correctAnswer: 'D', explanation: 'Nucleotides, composed of a sugar, a phosphate group, and a nitrogenous base, are the building blocks of DNA and RNA.' },
+            { id: 'B14', questionText: 'In the human heart, which chamber pumps oxygenated blood to the rest of the body via the systemic circulation?', section: 'Biology', options: { A: 'Right atrium', B: 'Left atrium', C: 'Right ventricle', D: 'Left ventricle', E: 'Aorta' }, correctAnswer: 'D', explanation: 'The left ventricle has the thickest muscular wall and generates the highest pressure to push oxygenated blood through the aorta to the body.' },
+            { id: 'B15', questionText: 'Mendel\'s Law of Segregation states that:', section: 'Biology', options: { A: 'Genes for different traits assort independently of one another.', B: 'Allele pairs separate during gamete formation and randomly unite at fertilization.', C: 'Traits are inherited as a blend of the two parents\' characteristics.', D: 'All genes are found on homologous chromosomes.', E: 'One trait is always completely dominant over another.' }, correctAnswer: 'B', explanation: 'The Law of Segregation describes how the two alleles for a trait separate into different gametes during meiosis.' },
+            { id: 'B16', questionText: 'Which structure in a plant cell provides rigid support and protection, but is absent in animal cells?', section: 'Biology', options: { A: 'Cell membrane', B: 'Mitochondrion', C: 'Cell wall', D: 'Vacuole', E: 'Chloroplast' }, correctAnswer: 'C', explanation: 'The cell wall, made primarily of cellulose in plants, provides structural support and protection.' },
+            { id: 'B17', questionText: 'Which type of immunoglobulin is the most abundant in the blood and can cross the placenta to provide passive immunity to a fetus?', section: 'Biology', options: { A: '$\\text{IgA}$', B: '$\\text{IgD}$', C: '$\\text{IgE}$', D: '$\\text{IgG}$', E: '$\\text{IgM}$' }, correctAnswer: 'D', explanation: '$\\text{IgG}$ is the only class of antibody that can pass through the placenta.' },
+            { id: 'B18', questionText: 'In the human digestive system, where does the majority of nutrient absorption take place?', section: 'Biology', options: { A: 'Stomach', B: 'Esophagus', C: 'Large intestine', D: 'Small intestine', E: 'Liver' }, correctAnswer: 'D', explanation: 'The small intestine\'s enormous surface area is optimized for absorbing digested nutrients.' },
+            { id: 'B19', questionText: 'Which process converts the genetic information stored in $\\text{mRNA}$ into a sequence of amino acids (protein)?', section: 'Biology', options: { A: 'Replication', B: 'Transcription', C: 'Translation', D: 'Reverse transcription', E: 'Splicing' }, correctAnswer: 'C', explanation: 'Translation occurs on ribosomes, where $\\text{tRNA}$ molecules match codons on the $\\text{mRNA}$ to deliver the correct amino acids.' },
+            { id: 'B20', questionText: 'An organism that produces its own food, usually through photosynthesis, is classified as a(n):', section: 'Biology', options: { A: 'Heterotroph', B: 'Decomposer', C: 'Carnivore', D: 'Autotroph', E: 'Chemotroph' }, correctAnswer: 'D', explanation: 'Autotrophs (\'self-feeders\') use energy (light or chemical) to make organic food molecules.' },
+            { id: 'B21', questionText: 'What is the primary product of the light-dependent reactions of photosynthesis that provides energy for the light-independent reactions (Calvin cycle)?', section: 'Biology', options: { A: '$\\text{Glucose}$', B: '$\\text{O}_2$', C: '$\\text{ATP}$ and $\\text{NADPH}$', D: 'Water', E: '$\\text{RuBisCO}$' }, correctAnswer: 'C', explanation: '$\\text{ATP}$ provides energy and $\\text{NADPH}$ provides reducing power (electrons) to fuel the Calvin cycle.' },
+            { id: 'B22', questionText: 'Which cell signaling molecule is a neurotransmitter in the neuromuscular junction, facilitating muscle contraction?', section: 'Biology', options: { A: 'Insulin', B: 'Adrenaline (Epinephrine)', C: 'Acetylcholine', D: 'Testosterone', E: 'Glucagon' }, correctAnswer: 'C', explanation: 'Acetylcholine is released from the motor neuron and binds to receptors on the muscle fiber, initiating an action potential.' },
+            { id: 'B23', questionText: 'In a heterozygous individual ($Aa$), the dominant allele ($A$) is expressed while the recessive allele ($a$) is masked. This is an example of:', section: 'Biology', options: { A: 'Co-dominance', B: 'Incomplete dominance', C: 'Mendelian dominance', D: 'Polygenic inheritance', E: 'Epistasis' }, correctAnswer: 'C', explanation: 'Mendelian dominance describes the pattern where one allele completely dictates the phenotype of a heterozygote.' },
+            { id: 'B24', questionText: 'The primary role of the kidney\'s nephron is:', section: 'Biology', options: { A: 'Producing bile for fat digestion.', B: 'Regulating blood pressure via hormonal secretion only.', C: 'Filtering blood, reabsorbing useful substances, and secreting waste to form urine.', D: 'Storing glucose as glycogen.', E: 'Producing $\\text{T}$ lymphocytes.' }, correctAnswer: 'C', explanation: 'The nephron is the functional unit of the kidney, responsible for the three steps of urine formation: filtration, reabsorption, and secretion.' },
+            { id: 'B25', questionText: 'Which of the following describes the difference between prokaryotic and eukaryotic cells?', section: 'Biology', options: { A: 'Prokaryotic cells have DNA; eukaryotic cells do not.', B: 'Eukaryotic cells are typically smaller than prokaryotic cells.', C: 'Prokaryotic cells lack a nucleus and other membrane-bound organelles.', D: 'Eukaryotic cells lack a plasma membrane.', E: 'Prokaryotic cells have a cytoskeleton; eukaryotic cells do not.' }, correctAnswer: 'C', explanation: 'Prokaryotic cells lack a membrane-bound nucleus and specialized organelles.' },
+            { id: 'B26', questionText: 'What is the primary function of the myelin sheath surrounding many axons in the nervous system?', section: 'Biology', options: { A: 'To provide physical support to the axon.', B: 'To produce neurotransmitters.', C: 'To slow down the transmission of the action potential.', D: 'To insulate the axon and increase the speed of action potential conduction.', E: 'To transport nutrients to the neuron cell body.' }, correctAnswer: 'D', explanation: 'Myelin acts as an electrical insulator, allowing the action potential to jump from node to node (saltatory conduction), greatly speeding up signal transmission.' },
+            { id: 'B27', questionText: 'The total number of $\\text{ATP}$ molecules produced from one molecule of glucose during glycolysis is a net yield of:', section: 'Biology', options: { A: '1', B: '2', C: '4', D: '30-32', E: '36-38' }, correctAnswer: 'B', explanation: 'Glycolysis consumes 2 $\\text{ATP}$ and produces 4 $\\text{ATP}$, resulting in a net gain of 2 $\\text{ATP}$ per glucose molecule.' },
+            { id: 'B28', questionText: 'The process by which organisms better adapted to their environment tend to survive and produce more offspring is called:', section: 'Biology', options: { A: 'Genetic drift', B: 'Gene flow', C: 'Artificial selection', D: 'Mutation', E: 'Natural selection' }, correctAnswer: 'E', explanation: 'Natural selection is the core mechanism of evolution, proposed by Darwin, where advantageous traits increase in frequency over generations.' },
+            { id: 'B29', questionText: 'If a species has a diploid number ($2n$) of 12 chromosomes, how many chromosomes will be found in its gametes?', section: 'Biology', options: { A: '3', B: '6', C: '12', D: '24', E: '48' }, correctAnswer: 'B', explanation: 'Gametes (sex cells) are haploid ($n$), containing half the number of chromosomes as the diploid somatic cells: $12 / 2 = 6$.' },
+            { id: 'B30', questionText: 'What substance is secreted by the liver to aid in the digestion and absorption of fats?', section: 'Biology', options: { A: 'Amylase', B: 'Pepsin', C: 'Bile', D: 'Hydrochloric acid', E: 'Insulin' }, correctAnswer: 'C', explanation: 'Bile emulsifies large fat globules into smaller droplets, increasing the surface area for lipase enzyme action.' },
+            { id: 'B31', questionText: 'Which bone is part of the appendicular skeleton?', section: 'Biology', options: { A: 'Sternum', B: 'Vertebrae', C: 'Ribs', D: 'Scapula', E: 'Hyoid' }, correctAnswer: 'D', explanation: 'The scapula (shoulder blade) is part of the pectoral girdle, which connects the upper limbs to the axial skeleton.' },
+            { id: 'B32', questionText: 'A codon is a sequence of three nucleotides on $\\text{mRNA}$ that codes for a specific:', section: 'Biology', options: { A: 'Sugar molecule', B: 'Ribosome', C: 'Amino acid', D: 'Fatty acid', E: 'Gene' }, correctAnswer: 'C', explanation: 'Codons are the language of genetics; each three-base sequence codes for one of the 20 common amino acids or a stop signal.' },
+            { id: 'B33', questionText: 'The condition characterized by the body\'s failure to produce or properly use insulin is:', section: 'Biology', options: { A: 'Hypothyroidism', B: 'Acromegaly', C: 'Diabetes mellitus', D: 'Addison\'s disease', E: 'Cushing\'s syndrome' }, correctAnswer: 'C', explanation: 'Diabetes mellitus results from insufficient insulin production (Type 1) or reduced cellular response to insulin (Type 2).' },
+            { id: 'B34', questionText: 'In plants, the tissue responsible for transporting water and dissolved minerals from the roots to the leaves is the:', section: 'Biology', options: { A: 'Phloem', B: 'Meristem', C: 'Xylem', D: 'Cortex', E: 'Pith' }, correctAnswer: 'C', explanation: 'Xylem conducts water and minerals primarily upward from the roots using a process called transpiration pull.' },
+            { id: 'B35', questionText: 'Which cellular junction seals the space between adjacent epithelial cells, preventing the passage of molecules through the intercellular space?', section: 'Biology', options: { A: 'Gap junction', B: 'Desmosome', C: 'Plasmodesmata', D: 'Tight junction', E: 'Hemidesmosome' }, correctAnswer: 'D', explanation: 'Tight junctions (zonula occludens) create a continuous, impermeable seal around the cells.' },
+            { id: 'B36', questionText: 'Which stage of mitosis is characterized by the sister chromatids separating and moving toward opposite poles of the cell?', section: 'Biology', options: { A: 'Prophase', B: 'Metaphase', C: 'Anaphase', D: 'Telophase', E: 'Interphase' }, correctAnswer: 'C', explanation: 'During anaphase, the separated chromatids (now chromosomes) are pulled apart by the spindle fibers.' },
+            { id: 'B37', questionText: 'What is the function of the hormone $\\text{TSH}$ (Thyroid-Stimulating Hormone)?', section: 'Biology', options: { A: 'Regulates blood glucose levels.', B: 'Stimulates the production of sperm.', C: 'Stimulates the thyroid gland to produce thyroid hormones.', D: 'Regulates water reabsorption in the kidney.', E: 'Controls the sleep/wake cycle.' }, correctAnswer: 'C', explanation: '$\\text{TSH}$, released by the anterior pituitary, specifically targets the thyroid gland.' },
+            { id: 'B38', questionText: 'A point mutation that changes a codon for one amino acid into a stop codon is called a:', section: 'Biology', options: { A: 'Silent mutation', B: 'Missense mutation', C: 'Nonsense mutation', D: 'Frameshift mutation', E: 'Translocation' }, correctAnswer: 'C', explanation: 'A nonsense mutation results in a premature stop codon.' },
+            { id: 'B39', questionText: 'Which component of the innate immune system is responsible for the immediate, non-specific engulfment of pathogens?', section: 'Biology', options: { A: 'T lymphocytes', B: 'B lymphocytes', C: 'Antibodies', D: 'Phagocytes (e.g., Macrophages)', E: 'Plasma cells' }, correctAnswer: 'D', explanation: 'Phagocytes like macrophages and neutrophils perform phagocytosis.' },
+            { id: 'B40', questionText: 'The respiratory pigment in human blood that binds reversibly to oxygen is:', section: 'Biology', options: { A: 'Myoglobin', B: 'Cytochrome c', C: 'Fibrinogen', D: 'Hemoglobin', E: 'Albumin' }, correctAnswer: 'D', explanation: 'Hemoglobin, located in red blood cells, is responsible for transporting oxygen.' },
+            { id: 'B41', questionText: 'Where does the Krebs cycle (Citric Acid Cycle) take place in a eukaryotic cell?', section: 'Biology', options: { A: 'Cytosol', B: 'Outer mitochondrial membrane', C: 'Inner mitochondrial membrane', D: 'Mitochondrial matrix', E: 'Rough endoplasmic reticulum' }, correctAnswer: 'D', explanation: 'The Krebs cycle enzymes are located in the fluid-filled matrix of the mitochondrion.' },
+            { id: 'B42', questionText: 'In humans, the sex of the offspring is determined by the:', section: 'Biology', options: { A: 'Egg cell (Ovum)', B: 'Sperm cell', C: 'Uterus environment', D: 'Mother\'s age', E: 'Number of autosomes' }, correctAnswer: 'B', explanation: 'The sperm carries either an $\\text{X}$ or a $\\text{Y}$ chromosome.' },
+            { id: 'B43', questionText: 'Which organic molecule serves as the primary component of the lipid bilayer of the cell membrane?', section: 'Biology', options: { A: 'Triglycerides', B: 'Cholesterol', C: 'Phospholipids', D: 'Proteins', E: 'Glycoproteins' }, correctAnswer: 'C', explanation: 'Phospholipids are amphipathic, allowing them to spontaneously form the bilayer in water.' },
+            { id: 'B44', questionText: 'Which class of enzymes is responsible for breaking down large organic molecules in the lysosome?', section: 'Biology', options: { A: 'Ligases', B: 'Isomerases', C: 'Hydrolases', D: 'Kinases', E: 'Synthases' }, correctAnswer: 'C', explanation: 'Hydrolases catalyze the cleavage of a chemical bond by adding water (digestion).' },
+            { id: 'B45', questionText: 'The structure responsible for producing thyroid hormones, which regulate metabolism, is the:', section: 'Biology', options: { A: 'Adrenal gland', B: 'Pancreas', C: 'Pituitary gland', D: 'Thyroid gland', E: 'Parathyroid gland' }, correctAnswer: 'D', explanation: 'The thyroid gland produces thyroxine ($\text{T}4$) and triiodothyronine ($\text{T}3$).' },
+            { id: 'B46', questionText: 'The primary function of the large intestine is to:', section: 'Biology', options: { A: 'Complete the chemical digestion of carbohydrates.', B: 'Absorb the majority of nutrients.', C: 'Reabsorb water and electrolytes and form feces.', D: 'Secrete digestive enzymes.', E: 'Produce intrinsic factor for $\\text{B}12$ absorption.' }, correctAnswer: 'C', explanation: 'The large intestine mainly compacts indigestible material by absorbing residual water and some electrolytes.' },
+            { id: 'B47', questionText: 'In genetics, a **locus** is best described as:', section: 'Biology', options: { A: 'A specific version of a gene (allele).', B: 'The observable characteristics of an organism.', C: 'The physical location of a gene on a chromosome.', D: 'The combination of alleles an organism possesses.', E: 'A section of $\\text{DNA}$ that does not code for a protein.' }, correctAnswer: 'C', explanation: 'A locus is the fixed position on a chromosome where a particular gene is located.' },
+            { id: 'B48', questionText: 'Which of the following describes the difference between $\\text{DNA}$ and $\\text{RNA}$?', section: 'Biology', options: { A: '$\\text{DNA}$ is double-stranded; $\\text{RNA}$ is always single-stranded.', B: '$\\text{DNA}$ contains the sugar ribose; $\\text{RNA}$ contains deoxyribose.', C: '$\\text{DNA}$ contains uracil; $\\text{RNA}$ contains thymine.', D: '$\\text{DNA}$ is typically restricted to the nucleus; $\\text{RNA}$ can be found in the nucleus and cytoplasm.', E: '$\\text{DNA}$ is a catalyst; $\\text{RNA}$ carries genetic information.' }, correctAnswer: 'D', explanation: '$\\text{DNA}$ primarily stays within the nucleus, while $\\text{RNA}$ moves to the cytoplasm for translation.' },
+            { id: 'B49', questionText: 'The pressure created by the presence of blood in the capillaries that drives fluid out of the capillary and into the interstitial fluid is called:', section: 'Biology', options: { A: 'Osmotic pressure', B: 'Colloid pressure', C: 'Hydrostatic pressure', D: 'Turgor pressure', E: 'Partial pressure' }, correctAnswer: 'C', explanation: 'Capillary hydrostatic pressure (blood pressure) is the force pushing water and solutes out of the capillaries.' },
+            { id: 'B50', questionText: 'Which of the following is characteristic of an **$\text{r}$-selected** species strategy?', section: 'Biology', options: { A: 'Long lifespan and extensive parental care.', B: 'Few offspring with a high survival rate.', C: 'Early maturation and production of many small offspring.', D: 'Stable population size near the carrying capacity.', E: 'Offspring that are large and competitive.' }, correctAnswer: 'C', explanation: '$\\text{r}$-selected species prioritize rapid reproduction with many low-investment offspring.' },
+            { id: 'B51', questionText: 'The primary mechanism by which $\\text{T}$ helper cells coordinate adaptive immunity is by releasing signaling molecules called:', section: 'Biology', options: { A: 'Immunoglobulins', B: 'Complement proteins', C: 'Cytokines', D: 'Histamines', E: 'Adrenaline' }, correctAnswer: 'C', explanation: '$\\text{T}$ helper cells secrete cytokines (e.g., interleukins) to activate other immune cells.' },
+            { id: 'B52', questionText: 'What is the role of $\\text{tRNA}$ (transfer $\\text{RNA}$) during protein synthesis?', section: 'Biology', options: { A: 'To carry the genetic code from the nucleus to the ribosome.', B: 'To synthesize the small ribosomal subunit.', C: 'To act as a catalyst for peptide bond formation.', D: 'To carry specific amino acids to the ribosome based on the $\\text{mRNA}$ codon.', E: 'To regulate gene expression.' }, correctAnswer: 'D', explanation: '$\\text{tRNA}$ molecules match codons on the $\\text{mRNA}$ to deliver the correct amino acids.' },
+            { id: 'B53', questionText: 'The process of splitting a water molecule to replace electrons lost by photosystem II in photosynthesis is called:', section: 'Biology', options: { A: 'Photophosphorylation', B: 'Reduction', C: 'Oxidative phosphorylation', D: 'Photolysis', E: 'Carbon fixation' }, correctAnswer: 'D', explanation: 'Photolysis is the light-driven splitting of water ($\text{H}_2\text{O}$), which yields electrons, protons, and oxygen gas ($\text{O}_2$).' },
+            { id: 'B54', questionText: 'Which part of the brain is primarily responsible for coordinating movement, posture, and balance?', section: 'Biology', options: { A: 'Cerebrum', B: 'Medulla oblongata', C: 'Cerebellum', D: 'Hypothalamus', E: 'Thalamus' }, correctAnswer: 'C', explanation: 'The cerebellum integrates sensory input to refine motor activity and ensure coordination.' },
+            { id: 'B55', questionText: 'Which vitamin is essential for the synthesis of visual pigments (e.g., Rhodopsin) and maintaining epithelial tissues?', section: 'Biology', options: { A: 'Vitamin C (Ascorbic acid)', B: 'Vitamin K (Phylloquinone)', C: 'Vitamin D (Calciferol)', D: 'Vitamin A (Retinol)', E: 'Vitamin $B_{12}$ (Cobalamin)' }, correctAnswer: 'D', explanation: 'Retinol ($\text{Vitamin A}$) is a precursor for retinal, a component of rhodopsin.' },
+            { id: 'B56', questionText: 'In a food web, a secondary consumer is an organism that feeds on:', section: 'Biology', options: { A: 'Producers only.', B: 'Tertiary consumers only.', C: 'Primary consumers only.', D: 'Decomposers.', E: 'Both producers and primary consumers.' }, correctAnswer: 'C', explanation: 'Secondary consumers occupy the third trophic level, preying on primary consumers (herbivores).' },
+            { id: 'B57', questionText: 'What is the primary role of cholesterol in the cell membrane?', section: 'Biology', options: { A: 'To act as a membrane channel for ions.', B: 'To synthesize phospholipids.', C: 'To regulate membrane fluidity across different temperatures.', D: 'To function as a peripheral receptor protein.', E: 'To produce $\\text{ATP}$.' }, correctAnswer: 'C', explanation: 'Cholesterol buffers membrane fluidity, preventing it from becoming too rigid or too fluid.' },
+            { id: 'B58', questionText: 'The structures within the lungs where gas exchange ($\text{O}_2$ and $\\text{CO}_2$) occurs are the:', section: 'Biology', options: { A: 'Bronchi', B: 'Trachea', C: 'Bronchioles', D: 'Pleura', E: 'Alveoli' }, correctAnswer: 'E', explanation: 'Alveoli are tiny air sacs providing a large surface area for efficient gas exchange via diffusion.' },
+            { id: 'B59', questionText: 'Which of the following describes a **homologous** pair of chromosomes?', section: 'Biology', options: { A: 'Two identical copies of a chromosome produced by replication.', B: 'Chromosomes that carry the same genes in the same order but may have different alleles.', C: 'Two chromosomes that have completely different genes.', D: 'A chromosome and its corresponding $\\text{mRNA}$ transcript.', E: 'The $\\text{X}$ and $\\text{Y}$ sex chromosomes in males.' }, correctAnswer: 'B', explanation: 'Homologous chromosomes are one paternal and one maternal, matching in length and gene position.' },
+            { id: 'B60', questionText: 'The hormone responsible for lowering blood glucose levels after a meal is:', section: 'Biology', options: { A: 'Glucagon', B: 'Cortisol', C: 'Insulin', D: 'Adrenaline (Epinephrine)', E: 'Thyroxine' }, correctAnswer: 'C', explanation: 'Insulin is secreted by the beta cells of the pancreas to promote the uptake of glucose into body cells.' },
+            { id: 'B61', questionText: 'Which type of chemical bond holds the two strands of the $\\text{DNA}$ double helix together?', section: 'Biology', options: { A: 'Peptide bonds', B: 'Phosphodiester bonds', C: 'Covalent bonds', D: 'Hydrogen bonds', E: 'Ionic bonds' }, correctAnswer: 'D', explanation: 'Hydrogen bonds form between complementary nitrogenous bases ($\text{A}-\text{T}$ and $\text{G}-\text{C}$) linking the two strands.' },
+            { id: 'B62', questionText: 'The structures responsible for converting light energy into chemical energy (glucose) in plant cells are the:', section: 'Biology', options: { A: 'Mitochondria', B: 'Amyloplasts', C: 'Chloroplasts', D: 'Vacuoles', E: 'Chromoplasts' }, correctAnswer: 'C', explanation: 'Chloroplasts contain chlorophyll and the necessary enzymes for the entire process of photosynthesis.' },
+            { id: 'B63', questionText: 'The functional unit of skeletal muscle, composed of a repeating arrangement of actin and myosin filaments, is the:', section: 'Biology', options: { A: 'Sarcolemma', B: 'Myofibril', C: 'Sarcoplasmic reticulum', D: 'Sarcomere', E: 'T-tubule' }, correctAnswer: 'D', explanation: 'The sarcomere is the smallest contractile unit of the muscle fiber.' },
+            { id: 'B64', questionText: 'A sudden change in the $\\text{DNA}$ sequence of an organism is called a:', section: 'Biology', options: { A: 'Recombination', B: 'Cross-over', C: 'Mutation', D: 'Replication', E: 'Transcription' }, correctAnswer: 'C', explanation: 'A mutation is a spontaneous or induced permanent change in the nucleotide sequence of a gene or a chromosome.' },
+            { id: 'B65', questionText: 'Which germ layer gives rise to the nervous system and the epidermis of the skin?', section: 'Biology', options: { A: 'Mesoderm', B: 'Endoderm', C: 'Ectoderm', D: 'Gastrula', E: 'Yolk sac' }, correctAnswer: 'C', explanation: 'The ectoderm is the outermost germ layer, responsible for forming external structures and the nervous system.' },
+            { id: 'B66', questionText: 'In the human circulatory system, arteries are defined as blood vessels that:', section: 'Biology', options: { A: 'Always carry oxygenated blood.', B: 'Always carry deoxygenated blood.', C: 'Carry blood away from the heart.', D: 'Carry blood toward the heart.', E: 'Are only found in the systemic circulation.' }, correctAnswer: 'C', explanation: 'The defining characteristic of an artery is that it conducts blood *away* from the heart.' },
+            { id: 'B67', questionText: 'Which phase of meiosis involves the synapsis and crossing over of homologous chromosomes?', section: 'Biology', options: { A: 'Prophase I', B: 'Metaphase I', C: 'Anaphase I', D: 'Prophase II', E: 'Anaphase II' }, correctAnswer: 'A', explanation: 'Synapsis (pairing) and crossing over occur during Prophase I.' },
+            { id: 'B68', questionText: 'The process by which a bacterium takes up foreign $\\text{DNA}$ from its environment is called:', section: 'Biology', options: { A: 'Conjugation', B: 'Transduction', C: 'Transformation', D: 'Replication', E: 'Lysis' }, correctAnswer: 'C', explanation: 'Transformation is a mechanism of horizontal gene transfer where bacteria internalize external $\\text{DNA}$ fragments.' },
+            { id: 'B69', questionText: 'What is the primary function of the small subunit of a ribosome?', section: 'Biology', options: { A: 'To catalyze peptide bond formation.', B: 'To bind the $\\text{tRNA}$ molecules.', C: 'To bind to the $\\text{mRNA}$ and ensure correct codon reading.', D: 'To house the $\\text{E}$-site of the ribosome.', E: 'To synthesize $\\text{rRNA}$.' }, correctAnswer: 'C', explanation: 'The small subunit binds to the $\\text{mRNA}$ and ensures correct codon matching.' },
+            { id: 'B70', questionText: 'Which component of the respiratory system provides a large, moist surface area for the diffusion of gases into the blood?', section: 'Biology', options: { A: 'Larynx', B: 'Pharynx', C: 'Trachea', D: 'Bronchi', E: 'Alveoli' }, correctAnswer: 'E', explanation: 'Alveoli are the terminal air sacs in the lungs where the gas exchange with the blood capillaries occurs.' },
+            { id: 'B71', questionText: 'The primary role of the thick layer of peptidoglycan in the cell wall of bacteria is to:', section: 'Biology', options: { A: 'Enable motility.', B: 'Store excess nutrients.', C: 'Protect the cell from osmotic lysis (bursting).', D: 'Facilitate conjugation.', E: 'Help with photosynthesis.' }, correctAnswer: 'C', explanation: 'Peptidoglycan provides mechanical strength, which resists the high internal turgor pressure of the bacterium.' },
+            { id: 'B72', questionText: 'Which of the following hormones is secreted by the adrenal medulla and is involved in the \'fight-or-flight\' response?', section: 'Biology', options: { A: 'Aldosterone', B: 'Cortisol', C: 'Insulin', D: 'Epinephrine (Adrenaline)', E: 'Glucagon' }, correctAnswer: 'D', explanation: 'Epinephrine and norepinephrine, secreted by the adrenal medulla, mediate the sympathetic nervous system\'s rapid response to stress.' },
+            { id: 'B73', questionText: 'The enzyme **amylase** begins the chemical digestion of which type of macromolecule?', section: 'Biology', options: { A: 'Proteins', B: 'Lipids', C: 'Nucleic acids', D: 'Carbohydrates (starches)', E: 'Vitamins' }, correctAnswer: 'D', explanation: 'Amylase, found in saliva and pancreatic juice, breaks down complex carbohydrates (starch) into simpler sugars.' },
+            { id: 'B74', questionText: 'A population is defined as:', section: 'Biology', options: { A: 'All the organisms living in a particular habitat.', B: 'A group of different species interacting in a community.', C: 'All the individuals of the same species living in a specific geographical area.', D: 'All the abiotic components in an environment.', E: 'A group of genetically identical individuals.' }, correctAnswer: 'C', explanation: 'In ecology, a population refers to a localized group of interbreeding individuals of the same species.' },
+            { id: 'B75', questionText: 'Which of the following is an example of an **autosomal dominant** genetic disorder?', section: 'Biology', options: { A: 'Cystic fibrosis', B: 'Sickle cell anemia', C: 'Huntington\'s disease', D: 'Hemophilia', E: 'Color blindness' }, correctAnswer: 'C', explanation: 'Huntington\'s disease is caused by a single copy of a dominant allele.' },
+             // CHEMISTRY (Sample)
+            { id: 'C1', questionText: 'Which element has the lowest first ionization energy?', section: 'Chemistry', options: { A: 'Cl', B: 'Na', C: 'Ne', D: 'Mg', E: 'S' }, correctAnswer: 'B', explanation: 'Na is an alkali metal and readily loses its electron.' },
+            { id: 'C2', questionText: 'What is the hybridization of C in $\\text{CH}_4$?', section: 'Chemistry', options: { A: '$sp$', B: '$sp^2$', C: '$sp^3$', D: '$d^2sp^3$', E: '$dsp^2$' }, correctAnswer: 'C', explanation: '$\text{CH}_4$ has tetrahedral geometry, requiring $sp^3$ hybridization.' },
+             // LOGICAL REASONING (Sample)
+            { id: 'LR1', questionText: 'If all A are B, and some B are C, does it follow that some A are C?', section: 'Logical Reasoning', options: { A: 'Yes', B: 'No', C: 'Maybe', D: 'Only if C are A', E: 'Cannot tell' }, correctAnswer: 'B', explanation: 'Not necessarily. The sets may not overlap.' },
+            { id: 'LR2', questionText: 'The number sequence is 2, 4, 8, 16, 32. What is the next number?', section: 'Logical Reasoning', options: { A: '48', B: '54', C: '64', D: '72', E: '78' }, correctAnswer: 'C', explanation: 'The pattern is multiplying the previous number by 2.' },
+             // PHYSICS & MATHEMATICS (Sample)
+            { id: 'PM1', questionText: 'What is the SI unit of force?', section: 'Physics & Mathematics', options: { A: 'Joule', B: 'Watt', C: 'Newton', D: 'Pascal', E: 'Volt' }, correctAnswer: 'C', explanation: 'The Newton (N) is the SI unit of force.' },
+            { id: 'PM2', questionText: 'If $2x + 5 = 15$, what is the value of $x$?', section: 'Physics & Mathematics', options: { A: '5', B: '10', C: '20', D: '2', E: '7.5' }, correctAnswer: 'A', explanation: 'Subtract 5: $2x=10$. Divide by 2: $x=5$.' },
+             // GENERAL KNOWLEDGE (Sample)
+            { id: 'GK1', questionText: 'Who painted the Mona Lisa?', section: 'General Knowledge', options: { A: 'Michelangelo', B: 'Raphael', C: 'Leonardo da Vinci', D: 'Donatello', E: 'Van Gogh' }, correctAnswer: 'C', explanation: 'Leonardo da Vinci painted the Mona Lisa.' },
+            { id: 'GK2', questionText: 'What is the capital city of Australia?', section: 'General Knowledge', options: { A: 'Sydney', B: 'Melbourne', C: 'Canberra', D: 'Perth', E: 'Brisbane' }, correctAnswer: 'C', explanation: 'The capital of Australia is Canberra.' }
+        ];
+
+
+        // --- 2. UTILITIES & FIREBASE ---
+        function showMessage(message, type = 'success') {
+            const box = document.getElementById('message-box');
+            if(box) {
+                box.textContent = message;
+                box.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-100 block ${type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+                setTimeout(() => { box.classList.add('hidden'); }, 5000);
+            }
+        }
+        function setLoading(isLoading) {
+            STATE.loading = isLoading;
+            const spinner = document.getElementById('loading-spinner');
+            const loadText = document.getElementById('initial-load-text');
+            if (spinner && loadText) {
+                if (isLoading) {
+                    spinner.classList.remove('hidden');
+                    loadText.textContent = "Loading...";
+                } else {
+                    spinner.classList.add('hidden');
+                    loadText.textContent = "";
+                }
+            }
+            renderApp();
+        }
+        function calculateScore(mockData) {
+            let correct = 0, incorrect = 0, omitted = 0, totalScore = 0;
+            mockData.questions.forEach(q => {
+                const userChoice = mockData.userAnswers[q.id];
+                if (!userChoice) omitted++;
+                else if (userChoice === q.correctAnswer) { correct++; totalScore += 1.5; }
+                else { incorrect++; totalScore -= 0.4; }
+            });
+            return { correct, incorrect, omitted, totalScore: totalScore.toFixed(2) };
+        }
+        function getPrivateDocRef(docName) {
+            if (!userId || !db) return null;
+            return doc(db, 'artifacts', appId, 'users', userId, 'settings', docName);
+        }
+        async function saveUserData() {
+            if (!userId) return;
+            const userDocRef = getPrivateDocRef('imat_user_data');
+            await setDoc(userDocRef, { examDate: STATE.userData.examDate, studyPlan: STATE.userData.studyPlan, lastUpdated: serverTimestamp() }, { merge: true });
+        }
+        async function saveMockScore(scoreData) {
+            if (!userId) return;
+            const scoresCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'mock_scores');
+            await addDoc(scoresCollectionRef, { ...scoreData, timestamp: serverTimestamp() });
+        }
+        function startDataListeners() {
+            if (!isAuthReady || !userId) return;
+            const userDocRef = getPrivateDocRef('imat_user_data');
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    STATE.userData.examDate = data.examDate || EXAM_DEFAULT_DATE.toISOString().split('T')[0];
+                    STATE.userData.studyPlan = data.studyPlan || [];
+                }
+                setLoading(false);
+                renderApp();
+            });
+            const scoresCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'mock_scores');
+            onSnapshot(scoresCollectionRef, (snapshot) => {
+                STATE.userData.mockScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
+                renderApp();
+            });
+        }
+        async function initFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) return;
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                else await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        document.getElementById('auth-status').textContent = `Status: Logged In`;
+                        document.getElementById('footer-user-id').textContent = userId;
+                        startDataListeners();
+                    } else { isAuthReady = true; setLoading(false); }
+                });
+            } catch (error) { console.error("Firebase init failed:", error); isAuthReady = true; setLoading(false); }
+        }
+        
+        // --- 3. QUESTION GENERATION LOGIC (Sequential Fix) ---
+        async function exponentialBackoffFetch(fn, retriesLeft = 8, delay = 2000) {
+            try { return await fn(); } catch (error) {
+                if (retriesLeft > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return exponentialBackoffFetch(fn, retriesLeft - 1, delay * 1.5);
+                } else throw error;
+            }
+        }
+        async function generateQuestions(prompt) {
+             const systemPrompt = "Generate challenging, multiple-choice questions (5 options: A-E) strictly based on the IMAT syllabus. Output must be a JSON array. Use LaTeX for math/chemistry.";
+             const responseSchema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        "questionText": { "type": "STRING" },
+                        "section": { "type": "STRING" },
+                        "options": { "type": "OBJECT" },
+                        "correctAnswer": { "type": "STRING", "enum": ["A", "B", "C", "D", "E"] },
+                        "explanation": { "type": "STRING" }
+                    },
+                    required: ["questionText", "section", "options", "correctAnswer", "explanation"]
+                }
+            };
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema }
+            };
+            const fetchFn = async () => {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API failed: ${response.status}`);
+                const result = await response.json();
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) throw new Error("API returned no content.");
+                return JSON.parse(jsonText);
+            };
+            
+            const questions = await exponentialBackoffFetch(fetchFn);
+            return questions.map((q, index) => ({...q, id: `GEN_${Date.now()}_${index}`}));
+        }
+
+        // RECODED: Full Mock Exam using sequential generation (FIXED)
+        async function startFullMockExam() {
+            if (STATE.loading) return;
+            setLoading(true);
+            showMessage("Starting Full Mock Generation. This takes a moment...", 'success');
+
+            let allQuestions = [];
+            try {
+                for (const section of IMAT_SECTIONS) {
+                    showMessage(`Generating ${section.name} (${section.count} Qs)...`);
+                    const prompt = `Generate ${section.count} questions for IMAT section: ${section.name}.`;
+                    const qs = await generateQuestions(prompt);
+                    allQuestions = [...allQuestions, ...qs];
+                }
+
+                STATE.currentMock = {
+                    questions: allQuestions,
+                    userAnswers: {},
+                    startTime: Date.now(),
+                    timeLeft: 100 * 60, // 100 Minutes
+                    isFinished: false,
+                    type: 'Full Mock'
+                };
+                
+                setLoading(false);
+                STATE.currentPage = 'mock_exam';
+                startMockTimer();
+                showMessage("60-Question Mock Exam Ready! Start the timer.", 'success');
+
+            } catch (e) {
+                console.error("Full Mock Error:", e);
+                setLoading(false);
+                showMessage("Failed to generate Full Mock. Try again or use Quick Quizzes.", 'error');
+            }
+        }
+
+        async function startAiQuiz(section, count) {
+            if (STATE.loading) return;
+            setLoading(true);
+            try {
+                const prompt = `Generate ${count} questions for IMAT section: ${section}.`;
+                const qs = await generateQuestions(prompt);
+                STATE.currentMock = { questions: qs, userAnswers: {}, startTime: Date.now(), timeLeft: 9999, isFinished: false, type: 'AI Quiz' };
+                setLoading(false);
+                STATE.currentPage = 'mock_exam';
+            } catch (e) {
+                setLoading(false);
+                showMessage("AI Quiz generation failed. Try the static quizzes.", 'error');
+            }
+        }
+
+        async function startQuiz(quizQuestions) {
+             STATE.currentMock = { questions: quizQuestions, userAnswers: {}, startTime: Date.now(), timeLeft: 9999, isFinished: false, type: 'Static Quiz' };
+            STATE.currentPage = 'mock_exam';
+            renderApp();
+        }
+        
+        // --- 4. STUDY PLAN LOGIC ---
+        function generatePlan() {
+            const examDateStr = STATE.userData.examDate;
+            const today = new Date();
+            const examDate = new Date(examDateStr);
+            const diffTime = examDate - today;
+            if (diffTime <= 0) { showMessage("The exam date is invalid.", 'error'); return; }
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const totalWeight = IMAT_SECTIONS.reduce((sum, s) => sum + s.weight, 0);
+            let studyPlan = [];
+            let daysAccumulated = 0;
+            const phases = [ { name: "Phase 1: Foundation (60% Time)", ratio: 0.60 }, { name: "Phase 2: Consolidation (30% Time)", ratio: 0.30 }, { name: "Phase 3: Final Blitz (10% Time)", ratio: 0.10 } ];
+
+            phases.forEach(phase => {
+                let phaseDays = Math.floor(totalDays * phase.ratio);
+                let phaseStartDay = totalDays - daysAccumulated - phaseDays + 1;
+                if (phaseDays <= 0) return;
+
+                studyPlan.push({ days: phaseDays, task: `START: ${phase.name} (Days ${phaseStartDay} to ${totalDays - daysAccumulated})`, section: "ALL", type: 'PHASE_START' });
+                
+                IMAT_SECTIONS.forEach(s => {
+                    const daysForSubject = Math.max(1, Math.round(phaseDays * (s.weight / totalWeight)));
+                    let task = '';
+                    if (phase.name.includes("Foundation")) task = `[${s.name}] Core topic review and basic practice.`;
+                    else if (phase.name.includes("Consolidation")) task = `[${s.name}] Dynamic quizzes and timed problem solving.`;
+                    else task = `[${s.name}] High-yield concept review.`;
+                    
+                    studyPlan.push({ days: daysForSubject, task: task, section: s.name, type: 'SUBJECT_FOCUS' });
+                });
+                daysAccumulated += phaseDays;
+            });
+            
+            STATE.userData.studyPlan = studyPlan.filter(p => p.days > 0);
+            saveUserData();
+            showMessage("In-depth study plan generated!", 'success');
+            renderApp();
+        }
+
+        // --- 5. MOCK EXAM TIMER & FINISH ---
+        let mockTimerInterval = null;
+        function startMockTimer() {
+            if (mockTimerInterval) clearInterval(mockTimerInterval);
+            mockTimerInterval = setInterval(() => {
+                if(STATE.currentMock.timeLeft > 0) {
+                    STATE.currentMock.timeLeft--;
+                    const timerEl = document.getElementById('mock-timer-display');
+                    if(timerEl) {
+                        const m = Math.floor(STATE.currentMock.timeLeft / 60);
+                        const s = STATE.currentMock.timeLeft % 60;
+                        timerEl.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    }
+                } else {
+                    finishMockExam();
+                }
+            }, 1000);
+        }
+
+        function finishMockExam() {
+            if (!STATE.currentMock) return;
+            STATE.currentMock.isFinished = true;
+            if (STATE.currentMock.type === 'Full Mock') clearInterval(mockTimerInterval);
+            
+            const score = calculateScore(STATE.currentMock);
+            STATE.currentMock.score = score;
+            
+            // Save Full Mocks and AI Quizzes to history
+            if (STATE.currentMock.type === 'Full Mock' || STATE.currentMock.type === 'AI Quiz') {
+                saveMockScore({
+                    questionsCount: STATE.currentMock.questions.length,
+                    correct: score.correct,
+                    incorrect: score.incorrect,
+                    omitted: score.omitted,
+                    totalScore: parseFloat(score.totalScore),
+                    type: STATE.currentMock.type
+                });
+            }
+
+            STATE.currentPage = 'mock_results';
+            renderApp();
+        }
+        
+        // --- 6. EVENT HANDLERS & RENDERING ---
+        window.navigate = (page) => { STATE.currentPage = page; renderApp(); };
+        window.startFullMock = startFullMockExam;
+        window.startAiQuiz = (section, count) => startAiQuiz(section, parseInt(count));
+        window.startQuiz = startQuiz;
+        window.generatePlan = generatePlan;
+        window.PRE_GENERATED_QUIZ_QUESTIONS = PRE_GENERATED_QUIZ_QUESTIONS;
+
+        window.handleDateChange = (event) => { STATE.userData.examDate = event.target.value; };
+        window.handleAnswerChange = (questionId, value) => { if (STATE.currentMock && !STATE.currentMock.isFinished) STATE.currentMock.userAnswers[questionId] = value; renderApp(); };
+        window.handleQuestionChange = () => renderApp();
+        window.nextQuestion = () => { const current = parseInt(document.querySelector('input[name="question-nav"]:checked').value); if (current < STATE.currentMock.questions.length - 1) { document.querySelector(`input[name="question-nav"][value="${current + 1}"]`).checked = true; renderApp(); } };
+        window.prevQuestion = () => { const current = parseInt(document.querySelector('input[name="question-nav"]:checked').value); if (current > 0) { document.querySelector(`input[name="question-nav"][value="${current - 1}"]`).checked = true; renderApp(); } };
+        window.finishMockExam = finishMockExam;
+
+
+        function renderNavbar() {
+            const container = document.getElementById('nav-container');
+            const links = [
+                { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+                { id: 'mock_setup', label: 'Practice', icon: 'pencil' },
+                { id: 'study_plan', label: 'Study Planner', icon: 'calendar-check' }
+            ];
+
+            container.innerHTML = links.map(link => `
+                <a href="#" onclick="window.navigate('${link.id}')"
+                   class="nav-link flex items-center space-x-1 py-2 px-3 transition duration-150 ease-in-out text-gray-600 hover:text-indigo-600 ${STATE.currentPage.startsWith(link.id.split('_')[0]) ? 'active' : ''}">
+                   <i data-lucide="${link.icon}" class="h-5 w-5"></i>
+                   <span class="hidden sm:inline">${link.label}</span>
+                </a>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderDashboard() {
+            const today = new Date();
+            const examDate = new Date(STATE.userData.examDate);
+            const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+            const latestScore = STATE.userData.mockScores[0];
+            const hasScore = latestScore && latestScore.totalScore !== undefined;
+
+            return `
+                <div class="space-y-8">
+                    <div class="bg-indigo-600 text-white p-6 sm:p-10 rounded-xl shadow-lg">
+                        <h2 class="text-4xl font-extrabold mb-2">Welcome to IMAT Prep Forge!</h2>
+                        <p class="text-indigo-200">Your custom training ground for the International Medical Admissions Test.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <!-- Days Left Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-primary">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Days to Exam</h3>
+                                <i data-lucide="calendar" class="text-primary h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${daysLeft > 0 ? daysLeft : '0'}</p>
+                            <p class="text-sm text-gray-500 mt-1">Target Date: ${STATE.userData.examDate}</p>
+                            <button onclick="window.navigate('study_plan')" class="text-primary hover:text-indigo-700 text-sm font-medium mt-3">
+                                <i data-lucide="arrow-right" class="inline h-4 w-4"></i> View/Update Plan
+                            </button>
+                        </div>
+                        
+                        <!-- Latest Score Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-600">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Latest Practice Score</h3>
+                                <i data-lucide="award" class="text-green-600 h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${hasScore ? latestScore.totalScore : 'N/A'}</p>
+                            <p class="text-sm text-gray-500 mt-1">${hasScore ? `${latestScore.type} | Correct: ${latestScore.correct}, Incorrect: ${latestScore.incorrect}` : 'No practice completed yet.'}</p>
+                            <button onclick="window.navigate('mock_setup')" class="text-green-600 hover:text-green-700 text-sm font-medium mt-3">
+                                <i data-lucide="plus-circle" class="inline h-4 w-4"></i> Start Practice
+                            </button>
+                        </div>
+                        
+                        <!-- Total Mocks Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-700">Practice Sessions</h3>
+                                <i data-lucide="list-checks" class="text-yellow-500 h-6 w-6"></i>
+                            </div>
+                            <p class="text-5xl font-bold text-gray-900 mt-2">${STATE.userData.mockScores.length}</p>
+                            <p class="text-sm text-gray-500 mt-1">Practice makes perfect!</p>
+                            <button onclick="document.getElementById('mock-history').scrollIntoView({behavior: 'smooth'})" class="text-yellow-500 hover:text-yellow-700 text-sm font-medium mt-3">
+                                <i data-lucide="history" class="inline h-4 w-4"></i> View History
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mock History Section -->
+                    <div id="mock-history" class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i data-lucide="bar-chart-3" class="h-6 w-6 mr-2 text-indigo-600"></i> Practice History
+                        </h3>
+                        ${STATE.userData.mockScores.length > 0 ? `
+                            <ul class="divide-y divide-gray-200">
+                                ${STATE.userData.mockScores.map(score => `
+                                    <li class="py-3 flex justify-between items-center">
+                                        <div>
+                                            <p class="font-medium text-gray-900">Score: <span class="text-green-600">${score.totalScore}</span> / ${(score.questionsCount * 1.5).toFixed(1)}</p>
+                                            <p class="text-sm text-gray-500">${score.type || 'Session'} | Completed: ${new Date(score.timestamp.toDate()).toLocaleString()}</p>
+                                        </div>
+                                        <div class="text-sm text-right">
+                                            <p class="text-green-500">Correct: ${score.correct}</p>
+                                            <p class="text-red-500">Incorrect: ${score.incorrect}</p>
+                                            <p class="text-yellow-500">Omitted: ${score.omitted}</p>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : `
+                            <p class="text-gray-500 italic">Complete a quiz or mock to see your history here.</p>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMockSetup() {
+            const preGeneratedQuizzes = IMAT_SECTIONS.map(section => {
+                const quizData = PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === section.name);
+                if (quizData.length > 0) {
+                    return `
+                        <div class="bg-white p-5 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-gray-800">${section.name} Quiz</h4>
+                            <p class="text-gray-600 text-sm mb-3">Instant revision quiz (${quizData.length} questions).</p>
+                            <button onclick="window.startQuiz(window.PRE_GENERATED_QUIZ_QUESTIONS.filter(q => q.section === '${section.name}'))" 
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center">
+                                <i data-lucide="zap" class="h-4 w-4 mr-1"></i> Start Instant Quiz
+                            </button>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-4">Practice Modes</h2>
+                    
+                    <!-- 1. Full Mock Exam (RESTORED WITH SEQUENTIAL GENERATION FIX) -->
+                    <div class="space-y-4 p-5 bg-indigo-50 rounded-xl border-l-4 border-indigo-500">
+                        <h3 class="text-2xl font-bold text-indigo-800">Full Simulated Mock Exam (60 Qs, 100 Minutes)</h3>
+                        <p class="text-lg text-indigo-700">
+                            Generates the full 60-question IMAT structure using sequential AI requests for maximum reliability. Results are saved.
+                        </p>
+                        <button onclick="window.startFullMock()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center justify-center" ${STATE.loading ? 'disabled' : ''}>
+                            <i data-lucide="clock" class="h-5 w-5 mr-2"></i> Start Full 100-Minute Mock
+                        </button>
+                    </div>
+
+                    <!-- 2. Dynamic AI Quizzes -->
+                    <div class="space-y-4 p-5 bg-green-50 rounded-xl border-l-4 border-green-500">
+                        <h3 class="text-2xl font-bold text-green-800">Dynamic AI Quick Quizzes (Generate Unlimited Questions)</h3>
+                        <p class="text-lg text-green-700">
+                            Instantly generate a custom number of unique, untimed questions for any section. Max 30 questions for highest reliability. Results are saved.
+                        </p>
+                        <div class="grid sm:grid-cols-3 gap-3 items-end">
+                            <div class="col-span-1">
+                                <label for="quiz-section" class="block text-sm font-medium text-gray-700">Select Section</label>
+                                <select id="quiz-section" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                                    ${IMAT_SECTIONS.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="col-span-1">
+                                <label for="quiz-count" class="block text-sm font-medium text-gray-700">Number of Questions (Max 30)</label>
+                                <input type="number" id="quiz-count" value="10" min="5" max="30" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <div class="col-span-1">
+                                <button onclick="window.startAiQuiz(document.getElementById('quiz-section').value, document.getElementById('quiz-count').value)"
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center justify-center"
+                                    ${STATE.loading ? 'disabled' : ''}>
+                                    <i data-lucide="plus-square" class="h-5 w-5 mr-2"></i> Start Custom Quiz
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Quick Quizzes -->
+                    <div class="space-y-4 pt-4">
+                        <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">Quick Revision Quizzes (Instant Load - ${PRE_GENERATED_QUIZ_QUESTIONS.length} Questions Total)</h3>
+                        <p class="text-gray-600">
+                            These quizzes are **embedded** in the file and load instantly for 100% reliability. Not saved to history.
+                        </p>
+                        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            ${preGeneratedQuizzes}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMockExam() {
+            if (!STATE.currentMock) return `<div class="text-center p-8"><p class="text-xl text-gray-500">Practice not started.</p></div>`;
+
+            const { questions, userAnswers, timeLeft, type } = STATE.currentMock;
+            
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+
+            const currentQuestionIndex = parseInt(document.querySelector('input[name="question-nav"]:checked')?.value || '0');
+            const currentQuestion = questions[currentQuestionIndex];
+            
+            const sectionStartIndices = {};
+            questions.forEach((q, index) => {
+                let lastSection = index > 0 ? questions[index - 1].section : null;
+                if (q.section !== lastSection) sectionStartIndices[index] = q.section;
+            });
+
+
+            return `
+                <div class="grid lg:grid-cols-4 gap-6">
+                    <div class="lg:col-span-1 bg-white p-4 rounded-xl shadow-lg sticky top-20 h-fit">
+                        <div class="text-center p-3 border-b mb-4">
+                            <p class="text-xl font-semibold text-gray-700">${type === 'Full Mock' ? 'Time Remaining' : 'Untimed Quiz'}</p>
+                            <p id="mock-timer-display" class="text-4xl font-extrabold ${type === 'Full Mock' && timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-green-600'}">
+                                ${type === 'Full Mock' ? `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}` : 'N/A'}
+                            </p>
+                        </div>
+
+                        <div class="max-h-[70vh] overflow-y-auto">
+                            <h4 class="font-bold mb-3 text-gray-800">Question Navigation (${questions.length})</h4>
+                            <div class="grid grid-cols-5 sm:grid-cols-6 gap-2">
+                                ${questions.map((q, index) => {
+                                    const answer = userAnswers[q.id];
+                                    let color = 'bg-gray-200 text-gray-700';
+                                    if (answer) color = 'bg-indigo-600 text-white shadow-md';
+                                    let sectionLabel = sectionStartIndices[index] ? `<span class="block text-xs font-semibold text-gray-500 pt-2">${sectionStartIndices[index]}</span>` : '';
+                                    return `
+                                        ${sectionLabel}
+                                        <label>
+                                            <input type="radio" name="question-nav" value="${index}" class="hidden" ${index === currentQuestionIndex ? 'checked' : ''} onchange="window.handleQuestionChange()">
+                                            <div class="w-full text-center p-2 rounded-lg cursor-pointer ${color} hover:shadow-lg transition duration-150 border-2 ${index === currentQuestionIndex ? 'border-indigo-600 ring-2 ring-indigo-300' : 'border-transparent'}">
+                                                ${index + 1}
+                                            </div>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-3 space-y-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg question-card">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h3 class="text-2xl font-bold text-gray-800">Question ${currentQuestionIndex + 1} / ${questions.length}</h3>
+                                <span class="text-md font-medium text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">${currentQuestion.section}</span>
+                            </div>
+
+                            <p class="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-6">${currentQuestion.questionText}</p>
+
+                            <div id="options-container" class="space-y-3">
+                                ${Object.entries(currentQuestion.options).map(([key, value]) => `
+                                    <label class="flex items-start p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50 transition duration-150 border-2 ${userAnswers[currentQuestion.id] === key ? 'border-indigo-600 bg-indigo-100/50' : 'border-gray-200'}">
+                                        <input type="radio" name="answer" value="${key}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500"
+                                            ${userAnswers[currentQuestion.id] === key ? 'checked' : ''}
+                                            onchange="window.handleAnswerChange('${currentQuestion.id}', event.target.value)"
+                                        >
+                                        <span class="ml-3 text-gray-700 font-medium">${key}.</span>
+                                        <span class="ml-2 text-gray-600 whitespace-pre-wrap">${value}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
+                            <button onclick="window.prevQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''} class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 flex items-center">
+                                <i data-lucide="chevron-left" class="h-5 w-5 mr-1"></i> Previous
+                            </button>
+                            
+                            <button onclick="window.finishMockExam()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transform hover:scale-105">
+                                <i data-lucide="flag" class="h-5 w-5 mr-1"></i> Finish & Review
+                            </button>
+
+                            <button onclick="window.nextQuestion()" ${currentQuestionIndex === questions.length - 1 ? 'disabled' : ''} class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 flex items-center">
+                                Next <i data-lucide="chevron-right" class="h-5 w-5 ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMockResults() {
+            if (!STATE.currentMock || !STATE.currentMock.score) return `<div class="text-center p-8"><p class="text-xl text-gray-500">No practice results found.</p></div>`;
+
+            const score = STATE.currentMock.score;
+            const questions = STATE.currentMock.questions;
+            const isMock = STATE.currentMock.type === 'Full Mock';
+
+            return `
+                <div class="max-w-4xl mx-auto space-y-8">
+                    <div class="text-center ${isMock ? 'bg-green-100 border-t-8 border-green-500' : 'bg-blue-100 border-t-8 border-blue-500'} p-8 rounded-xl shadow-xl ">
+                        <i data-lucide="trophy" class="h-12 w-12 ${isMock ? 'text-green-600' : 'text-blue-600'} mx-auto mb-3"></i>
+                        <h2 class="text-4xl font-extrabold text-gray-800">${isMock ? 'Full Mock Results' : 'Quiz Review'}</h2>
+                        <p class="text-6xl font-black ${isMock ? 'text-green-600' : 'text-blue-600'} mt-4">${score.totalScore}</p>
+                        <p class="text-xl text-gray-600">Total Score (Max ${isMock ? '90.0' : `${(questions.length * 1.5).toFixed(1)}`})</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-white p-4 rounded-lg shadow"><p class="text-3xl font-bold text-green-600">${score.correct}</p><p class="text-sm text-gray-500">Correct</p></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><p class="text-3xl font-bold text-red-600">${score.incorrect}</p><p class="text-sm text-gray-500">Incorrect</p></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><p class="text-3xl font-bold text-yellow-600">${score.omitted}</p><p class="text-sm text-gray-500">Omitted</p></div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Review Questions</h3>
+                        <div class="space-y-6">
+                            ${questions.map((q, index) => {
+                                const userAnswer = STATE.currentMock.userAnswers[q.id];
+                                const isCorrect = userAnswer === q.correctAnswer;
+                                const borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+
+                                return `
+                                    <div class="p-4 rounded-xl shadow-md border-l-4 ${borderColor} bg-gray-50">
+                                        <p class="font-bold text-lg text-gray-800 mb-1">Q${index + 1}: ${q.section} ${isCorrect ? '✅' : '❌'}</p>
+                                        <p class="text-gray-700 whitespace-pre-wrap mb-3">${q.questionText}</p>
+                                        
+                                        <ul class="space-y-1 text-sm">
+                                            ${Object.entries(q.options).map(([key, value]) => {
+                                                let style = 'text-gray-600';
+                                                if (key === q.correctAnswer) style = 'font-bold text-green-600 bg-green-50 p-1 rounded';
+                                                else if (key === userAnswer && !isCorrect) style = 'font-bold text-red-600 bg-red-50 p-1 rounded line-through';
+                                                return `<li class="${style}">${key}. ${value}</li>`;
+                                            }).join('')}
+                                        </ul>
+
+                                        <div class="mt-4 p-3 bg-indigo-50 rounded-lg">
+                                            <p class="font-semibold text-indigo-700">Explanation:</p>
+                                            <p class="text-sm text-indigo-600 whitespace-pre-wrap">${q.explanation}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="text-center pt-4">
+                        <button onclick="window.navigate('dashboard')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg">
+                            Return to Dashboard
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStudyPlan() {
+            const today = new Date();
+            const examDate = new Date(STATE.userData.examDate);
+            const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+            
+            return `
+                <div class="max-w-4xl mx-auto space-y-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-4">IMAT Study Planner</h2>
+
+                    <div class="p-5 bg-indigo-50 rounded-xl border border-indigo-200">
+                        <label for="exam-date" class="block text-lg font-medium text-indigo-800 mb-2">Set Your IMAT Exam Date:</label>
+                        <input type="date" id="exam-date" value="${STATE.userData.examDate}" onchange="window.handleDateChange(event)" class="p-2 border border-indigo-300 rounded-lg w-full sm:w-1/2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <div class="mt-4 text-gray-700">
+                            <p class="font-semibold">Days Remaining: <span class="text-indigo-600 text-xl">${daysLeft > 0 ? daysLeft : '0'}</span></p>
+                        </div>
+                        <button onclick="window.generatePlan()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:opacity-50" ${STATE.loading ? 'disabled' : ''}>
+                            <i data-lucide="refresh-cw" class="inline h-4 w-4 mr-1"></i> Generate/Update Plan
+                        </button>
+                    </div>
+                    
+                    <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Recommended Study Schedule (${STATE.userData.studyPlan.length > 0 ? daysLeft + ' Days Total' : 'Set Date Above'})</h3>
+                    
+                    ${STATE.userData.studyPlan.length > 0 ? `
+                        <div class="space-y-4">
+                            ${STATE.userData.studyPlan.map(item => {
+                                let color = 'bg-gray-100 border-gray-300 text-gray-800';
+                                let icon = 'book-open';
+                                // Simplified color/icon logic for display
+                                if (item.type === 'PHASE_START') { color = 'bg-indigo-600 border-indigo-600 text-white font-bold'; icon = 'flag'; } 
+                                else if (item.section === 'Biology') { color = 'bg-green-100 border-green-500 text-green-800'; icon = 'leaf'; }
+                                else if (item.section === 'Chemistry') { color = 'bg-yellow-100 border-yellow-500 text-yellow-800'; icon = 'atom'; }
+                                else if (item.section.includes('Physics')) { color = 'bg-red-100 border-red-500 text-red-800'; icon = 'zap'; }
+                                else if (item.section.includes('Logical')) { color = 'bg-purple-100 border-purple-500 text-purple-800'; icon = 'brain'; }
+                                
+                                return `
+                                    <div class="p-4 rounded-lg border-l-8 ${color} shadow-sm flex justify-between items-center">
+                                        <div class="flex items-start space-x-3">
+                                            <i data-lucide="${icon}" class="h-5 w-5 ${item.type === 'PHASE_START' ? 'text-white' : 'text-gray-700'}"></i>
+                                            <div>
+                                                <p class="text-lg font-semibold">${item.task}</p>
+                                                <p class="text-sm opacity-80">${item.section}</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-xl font-black">${item.days} ${item.days === 1 ? 'Day' : 'Days'}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <div class="p-6 bg-yellow-50 rounded-lg text-center border-2 border-dashed border-yellow-300">
+                            <p class="text-lg text-yellow-700">Set your exam date and click "Generate/Update Plan" to see your personalized schedule!</p>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+
+        function renderApp() {
+            const view = document.getElementById('app-view');
+            
+            if (STATE.loading && !isAuthReady) {
+                view.innerHTML = `<div class="flex flex-col justify-center items-center h-96"><div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div><p class="text-lg text-gray-600">Initializing Firebase...</p></div>`;
+                return;
+            }
+
+            const renderMap = {
+                'dashboard': renderDashboard,
+                'mock_setup': renderMockSetup,
+                'mock_exam': renderMockExam,
+                'mock_results': renderMockResults,
+                'study_plan': renderStudyPlan,
+            };
+            
+            view.innerHTML = renderMap[STATE.currentPage] ? renderMap[STATE.currentPage]() : renderDashboard();
+            renderNavbar();
+            lucide.createIcons();
+        }
+
+        window.onload = () => { initFirebase(); renderApp(); };
+    </script>
+</body>
+</html>
